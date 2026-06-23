@@ -13,25 +13,37 @@ type Slide = {
   label: string;
 };
 
-export default function HomeSpeciesRotate({ spotlight }: { spotlight: SpeciesSpotlight }) {
+const EMPTY_SPOTLIGHT: SpeciesSpotlight = {
+  topRankSpecies: null,
+  popularSpecies: null,
+  popularCatchCount: 0,
+};
+
+export default function HomeSpeciesRotate({
+  spotlight = EMPTY_SPOTLIGHT,
+}: {
+  spotlight?: SpeciesSpotlight;
+}) {
+  const data = spotlight ?? EMPTY_SPOTLIGHT;
+
   const slides = useMemo<Slide[]>(() => {
     const items: Slide[] = [];
-    if (spotlight.popularSpecies) {
+    if (data.popularSpecies) {
       const countLabel =
-        spotlight.popularCatchCount > 0 ? ` · ${spotlight.popularCatchCount}건` : '';
+        data.popularCatchCount > 0 ? ` · ${data.popularCatchCount}건` : '';
       items.push({
-        value: spotlight.popularSpecies,
+        value: data.popularSpecies,
         label: `인기 어종${countLabel}`,
       });
     }
-    if (spotlight.topRankSpecies) {
+    if (data.topRankSpecies) {
       items.push({
-        value: spotlight.topRankSpecies,
+        value: data.topRankSpecies,
         label: '1위 어종',
       });
     }
     return items;
-  }, [spotlight]);
+  }, [data.popularSpecies, data.popularCatchCount, data.topRankSpecies]);
 
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);

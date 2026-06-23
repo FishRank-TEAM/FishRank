@@ -5,10 +5,19 @@ import HomeSpeciesRotate from './HomeSpeciesRotate';
 type Props = {
   rankings: HomeRankingItem[];
   tournaments: HomeTournament[];
-  speciesSpotlight: HomeSpeciesSpotlight;
+  speciesSpotlight?: HomeSpeciesSpotlight;
 };
 
-export default function HomeStatsBar({ rankings, tournaments, speciesSpotlight }: Props) {
+export default function HomeStatsBar({
+  rankings,
+  tournaments,
+  speciesSpotlight,
+}: Props) {
+  const spotlight = speciesSpotlight ?? {
+    topRankSpecies: rankings[0]?.fishSpecies?.nameKo ?? null,
+    popularSpecies: null,
+    popularCatchCount: 0,
+  };
   const top = rankings[0];
   const tournamentEntries = tournaments.reduce(
     (sum, t) => sum + (t._count?.entries ?? 0),
@@ -42,7 +51,7 @@ export default function HomeStatsBar({ rankings, tournaments, speciesSpotlight }
             <span className="home-stat-label">{item.label}</span>
           </div>
         ))}
-        <HomeSpeciesRotate spotlight={speciesSpotlight} />
+        <HomeSpeciesRotate spotlight={spotlight} />
         {fixedItems.slice(2).map((item) => (
           <div key={item.label} className="home-stat">
             <span className={`home-stat-value${item.isText ? ' home-stat-value-text' : ''}`}>

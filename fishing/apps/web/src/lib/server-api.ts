@@ -57,6 +57,24 @@ export type HomeSpeciesSpotlight = {
   popularCatchCount: number;
 };
 
+const EMPTY_SPECIES_SPOTLIGHT: HomeSpeciesSpotlight = {
+  topRankSpecies: null,
+  popularSpecies: null,
+  popularCatchCount: 0,
+};
+
+function normalizeSpeciesSpotlight(
+  raw: HomeSpeciesSpotlight | null | undefined,
+  rankings: HomeRankingItem[],
+): HomeSpeciesSpotlight {
+  const base = raw ?? EMPTY_SPECIES_SPOTLIGHT;
+  return {
+    topRankSpecies: base.topRankSpecies ?? rankings[0]?.fishSpecies?.nameKo ?? null,
+    popularSpecies: base.popularSpecies ?? null,
+    popularCatchCount: Number(base.popularCatchCount) || 0,
+  };
+}
+
 export async function fetchHomeData() {
   const [rankingsData, speciesSpotlight, tournaments, postsData, announcements] = await Promise.all([
     getJson<{ rankings: HomeRankingItem[] }>('/rankings?periodType=weekly&limit=8'),
@@ -66,13 +84,11 @@ export async function fetchHomeData() {
     getJson<HomeAnnouncement[]>('/announcements?limit=3'),
   ]);
 
+  const rankings = rankingsData?.rankings ?? [];
+
   return {
-    rankings: rankingsData?.rankings ?? [],
-    speciesSpotlight: speciesSpotlight ?? {
-      topRankSpecies: null,
-      popularSpecies: null,
-      popularCatchCount: 0,
-    },
+    rankings,
+    speciesSpotlight: normalizeSpeciesSpotlight(speciesSpotlight, rankings),
     tournaments: Array.isArray(tournaments) ? tournaments : [],
     posts: postsData?.items ?? [],
     announcements: Array.isArray(announcements) ? announcements : [],
