@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/auth.store';
 
 const REASONS = [
   '허위 기록',
+  '사진 도용',
   '부적절한 사진',
   '타인 사칭',
   '스팸/광고',
