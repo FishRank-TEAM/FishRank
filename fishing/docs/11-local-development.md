@@ -38,9 +38,12 @@ npm install
 # DB · Redis 컨테이너 기동
 npm run db:up
 
+# 최초 1회 (이미 했다면 생략)
+npm install
+
 # Prisma 클라이언트 생성 + 마이그레이션
-npm exec -w api prisma generate
-npm exec -w api prisma migrate deploy
+npm exec --prefix apps/api prisma generate
+npm exec --prefix apps/api prisma migrate deploy
 
 # (선택) 시드 데이터
 npm run db:seed
@@ -72,7 +75,7 @@ npm run web
 |---|---|
 | URL | http://localhost:3000 |
 | 앱 경로 | `apps/web` |
-| 직접 실행 | `npm run dev -w web` |
+| 직접 실행 | `npm run dev --prefix apps/web` |
 
 ### API (NestJS)
 
@@ -85,7 +88,7 @@ npm run api
 | URL | http://localhost:4000 |
 | Swagger | http://localhost:4000/api/docs |
 | 앱 경로 | `apps/api` |
-| 직접 실행 | `npm run dev -w api` |
+| 직접 실행 | `npm run dev --prefix apps/api` |
 
 ### 웹 + API 동시 실행
 
@@ -106,7 +109,7 @@ npm run mobile
 | Metro | http://localhost:8081 |
 | 앱 경로 | `apps/mobile` |
 | LAN 모드 | QR에 PC IP가 표시됨 (`--lan`) |
-| 터널 모드 | `npm run dev:tunnel -w mobile` (Wi-Fi 다를 때) |
+| 터널 모드 | `npm run dev:tunnel --prefix apps/mobile` (Wi-Fi 다를 때) |
 
 Expo Go에서 QR 스캔 후 접속합니다. **Expo Go SDK 버전과 프로젝트 SDK(54)가 일치**해야 합니다.
 
@@ -125,7 +128,7 @@ npm run import:fish-species
 npm run sync:fish-info
 
 # API 워크스페이스에서 Prisma Studio
-npm exec -w api prisma studio
+npm exec --prefix apps/api prisma studio
 ```
 
 ---
@@ -144,9 +147,9 @@ npm exec -w api prisma studio
 
 ## 5. 트러블슈팅
 
-### `pnpm: command not found` / `ERR_PNPM_…`
+### `pnpm: command not found` / `ERR_PNPM_…` / `Failed to get registry from pnpm`
 
-pnpm이 아닌 **npm**을 사용하세요. 터미널에 예전 `pnpm api`가 남아 있으면 `Ctrl+C` 후 `npm run api`로 다시 실행합니다.
+`apps/web/pnpm-lock.yaml`이 남아 있으면 Next.js가 pnpm을 찾습니다. 삭제 후 `npm install`을 다시 실행하세요. 명령은 **`npm run web`**, **`npm run dev`** 등 npm 기준을 사용합니다.
 
 ### 웹에서 API 호출 실패 (`ECONNREFUSED`)
 

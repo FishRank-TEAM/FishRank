@@ -34,6 +34,7 @@ export type RankingHighlight = RankingEntry & {
 };
 
 type CatchWithRelations = {
+  userId?: string;
   user: { id: string; nickname: string; profileImage: string | null; activityRegion?: string | null };
   id: string;
   imageUrl: string;
@@ -46,6 +47,17 @@ type CatchWithRelations = {
   rankScore: unknown;
   certification: { grade: string } | null;
   _count?: { votes: number };
+};
+
+type OvertakeCatch = {
+  id: string;
+  userId: string;
+  rankScore: unknown;
+  createdAt: Date;
+  lengthCm: unknown;
+  user: { id: string; nickname: string; profileImage: string | null };
+  fishSpecies: { id: number; nameKo: string } | null;
+  certification: { grade: string } | null;
 };
 
 @Injectable()
@@ -128,7 +140,7 @@ export class RankingsService {
     };
   }
 
-  private sortRankings<T extends { rankScore: unknown; createdAt: Date }>(list: T[]): T[] {
+  private sortRankings(list: CatchWithRelations[]): CatchWithRelations[] {
     return [...list].sort((a, b) => {
       const diff = Number(b.rankScore) - Number(a.rankScore);
       if (diff !== 0) return diff;
@@ -255,14 +267,16 @@ export class RankingsService {
     startOfToday.setHours(0, 0, 0, 0);
 
     if (rankingType === 'unofficial') {
-      const allCatches = await this.prisma.catch.findMany({
+      const allCatches = (await this.prisma.catch.findMany({
         where: this.buildBaseWhere(speciesId, weekly, 'unofficial'),
         include: this.catchInclude('unofficial'),
-      });
+      })) as CatchWithRelations[];
 
       const catchIds = allCatches.map((c) => c.id);
       const votesBefore = await this.getVoteCountsBefore(catchIds, startOfToday);
-      const currentVoteMap = new Map(allCatches.map((c) => [c.id, c._count?.votes ?? 0]));
+      const currentVoteMap = new Map<string, number>(
+        allCatches.map((c) => [c.id, c._count?.votes ?? 0]),
+      );
       const currentSorted = this.sortUnofficialByVoteMap(allCatches, currentVoteMap);
       const beforeSorted = this.sortUnofficialByVoteMap(
         allCatches.filter((c) => c.createdAt < startOfToday),
@@ -277,10 +291,10 @@ export class RankingsService {
       return highlight ?? this.toHighlight(rankings[0], null, 0, null);
     }
 
-    const allCatches = await this.prisma.catch.findMany({
+    const allCatches = (await this.prisma.catch.findMany({
       where: this.buildBaseWhere(speciesId, weekly, 'official'),
       include: this.catchInclude('official'),
-    });
+    })) as CatchWithRelations[];
 
     const beforeToday = allCatches.filter((c) => c.createdAt < startOfToday);
     const currentSorted = this.sortRankings(allCatches);
@@ -335,7 +349,7 @@ export class RankingsService {
     speciesId?: number,
     rankingType: RankingType = 'official',
   ) {
-    const catches = await this.prisma.catch.findMany({
+    const catches = (await this.prisma.catch.findMany({
       where: this.buildBaseWhere(speciesId, periodType === 'weekly', rankingType),
       include: {
         user: {
@@ -352,7 +366,7 @@ export class RankingsService {
           ? { _count: { select: { votes: true } } }
           : {}),
       },
-    });
+    })) as CatchWithRelations[];
 
     const ranked =
       rankingType === 'official'
@@ -394,7 +408,7 @@ export class RankingsService {
     limit = 20,
     rankingType: RankingType = 'official',
   ) {
-    const catches = await this.prisma.catch.findMany({
+    const catches = (await this.prisma.catch.findMany({
       where: this.buildBaseWhere(speciesId, periodType === 'weekly', rankingType),
       include: {
         user: {
@@ -411,7 +425,7 @@ export class RankingsService {
           ? { _count: { select: { votes: true } } }
           : {}),
       },
-    });
+    })) as CatchWithRelations[];
 
     const filtered = catches.filter((c) =>
       resolveCatchRegionKey(c.user.activityRegion, c.locationName, level) === regionKey,
@@ -431,8 +445,12 @@ export class RankingsService {
     };
   }
 
-  private sortByRankScore<T extends { rankScore: unknown; createdAt: Date }>(list: T[]): T[] {
-    return this.sortRankings(list);
+  private sortOvertakePool(list: OvertakeCatch[]): OvertakeCatch[] {
+    return [...list].sort((a, b) => {
+      const diff = Number(b.rankScore) - Number(a.rankScore);
+      if (diff !== 0) return diff;
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
   }
 
   async getTopOvertakes(
@@ -447,14 +465,14 @@ export class RankingsService {
     }
 
     const weekly = periodType === 'weekly';
-    const allCatches = await this.prisma.catch.findMany({
+    const allCatches = (await this.prisma.catch.findMany({
       where: this.buildBaseWhere(speciesId, weekly),
       include: {
         user: { select: { id: true, nickname: true, profileImage: true } },
         fishSpecies: { select: { id: true, nameKo: true } },
         certification: { select: { grade: true } },
       },
-    });
+    })) as OvertakeCatch[];
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 14);
@@ -483,8 +501,8 @@ export class RankingsService {
       const beforePool = allCatches.filter((x) => x.createdAt < c.createdAt);
       const afterPool = allCatches.filter((x) => x.createdAt <= c.createdAt);
 
-      const beforeTop = this.sortByRankScore(beforePool).slice(0, topN);
-      const afterTop = this.sortByRankScore(afterPool).slice(0, topN);
+      const beforeTop = this.sortOvertakePool(beforePool).slice(0, topN);
+      const afterTop = this.sortOvertakePool(afterPool).slice(0, topN);
 
       const newRank = afterTop.findIndex((x) => x.id === c.id) + 1;
       if (newRank <= 0 || newRank > topN) continue;
