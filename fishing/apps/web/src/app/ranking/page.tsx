@@ -91,7 +91,7 @@ export default function RankingPage() {
           </div>
         </div>
         {isUnofficial ? (
-          <UnofficialRankingSidebar />
+          <UnofficialRankingSidebar topItems={data.rankings} />
         ) : (
           <RankingHighlightCard
             item={highlightItem}
