@@ -33,7 +33,7 @@ export default function RankingEmptyState({
         <p className="ranking-empty-state-hint">
           {ctaHref.includes('/personal')
             ? '자랑 기록 업로드는 현재 이용할 수 없습니다'
-            : '줄자 인증 업로드는 모바일 앱에서 가능합니다'}
+            : '공식 인증은 모바일 앱(AR+AI)에서만 가능합니다'}
         </p>
       )}
     </div>
