@@ -10,7 +10,9 @@ import UploadDisabledNotice from '@/components/UploadDisabledNotice';
 import PageHeader from '@/components/layout/PageHeader';
 
 import CertificationGradeGuide from '@/components/certification/CertificationGradeGuide';
+import CertificationFairnessNote from '@/components/certification/CertificationFairnessNote';
 import { CAPTURE_RULES } from '@/lib/certification-grade';
+import { CERTIFIED_ANTI_FRAUD_HINT } from '@/lib/platform';
 
 export default function UploadPage() {
   if (!IS_CERTIFIED_UPLOAD_ENABLED) {
@@ -141,6 +143,8 @@ function UploadPageInner() {
     <main>
       <PageHeader title="인증 기록 업로드" description="줄자와 함께 찍은 사진으로 공식 인증 · 랭킹 반영" />
       <div className="site-container site-page-body page-narrow">
+        <CertificationFairnessNote variant="inline" className="upload-fairness-note" />
+        <p className="upload-anti-fraud-hint">{CERTIFIED_ANTI_FRAUD_HINT}</p>
         <p style={{ margin: '0 0 20px', fontSize: 12 }}>
           <Link href="/upload/personal" className="upload-alt-link">
             줄자 없이 자랑만? 비공식 기록 →
