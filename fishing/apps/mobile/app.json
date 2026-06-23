@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "FishRank",
+    "slug": "fishrank",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "fishrank",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#003d6b"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.fishrank.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "줄자 인증 낚시 기록 촬영에 카메라가 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "갤러리 업로드는 공식 인증에 사용되지 않습니다."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#003d6b"
+      },
+      "package": "com.fishrank.app",
+      "permissions": ["android.permission.CAMERA"]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "줄자 인증 낚시 기록 촬영에 카메라가 필요합니다."
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "http://localhost:4000/api/v1"
+    }
+  }
+}
