@@ -6,9 +6,10 @@ import RankingTabs from '@/components/RankingTabs';
 import RankingFilters from '@/components/ranking/RankingFilters';
 import RankingTypeTabs from '@/components/ranking/RankingTypeTabs';
 import CertificationGradeGuide from '@/components/certification/CertificationGradeGuide';
+import CertificationFairnessNote from '@/components/certification/CertificationFairnessNote';
 import { RankingFilterProvider, useRankingFilters } from '@/components/ranking/RankingFilterContext';
 import { isValidRankingSpeciesId } from '@/lib/ranking.constants';
-import { IS_BRAG_UPLOAD_ENABLED } from '@/lib/platform';
+import { IS_BRAG_UPLOAD_ENABLED, IS_CERTIFIED_UPLOAD_ENABLED } from '@/lib/platform';
 import Link from 'next/link';
 import { preloadKakaoMap } from '@/lib/kakao-map-loader';
 import { loadSidoGeoJson } from '@/lib/geo/geoJsonLoader';
@@ -66,7 +67,26 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
           </div>
         )}
         {rankingType === 'official' && !isRegional && (
-          <CertificationGradeGuide variant="compact" className="ranking-grade-guide" />
+          <>
+            {!IS_CERTIFIED_UPLOAD_ENABLED ? (
+              <div className="ranking-app-only-notice">
+                <span className="ranking-app-only-notice-icon" aria-hidden>📱</span>
+                <span>
+                  공식 인증 랭킹은 <strong>모바일 앱</strong>에서 AR+AI로 촬영한 기록만 반영됩니다.
+                  웹에서는 조회·자랑 기록만 가능합니다.
+                </span>
+              </div>
+            ) : (
+              <div className="ranking-certified-upload-inline">
+                <span>줄자 인증 사진을 올리면 공식 랭킹에 반영됩니다</span>
+                <Link href="/upload" className="ranking-certified-upload-btn">
+                  인증 기록 올리기
+                </Link>
+              </div>
+            )}
+            <CertificationFairnessNote variant="compact" className="ranking-fairness-note" />
+            <CertificationGradeGuide variant="compact" className="ranking-grade-guide" />
+          </>
         )}
       </header>
 
