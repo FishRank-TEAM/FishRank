@@ -8,12 +8,15 @@ import { formatTimeAgo } from '@/lib/utils';
 import { getImageUrl } from '@/lib/images';
 import { useAuthStore } from '@/store/auth.store';
 import PageHeader from '@/components/layout/PageHeader';
+import SiteEmptyState from '@/components/layout/SiteEmptyState';
+import SiteErrorState from '@/components/layout/SiteErrorState';
+import SiteLoadingState from '@/components/layout/SiteLoadingState';
 
 export default function CommunityPage() {
   const { isLoggedIn } = useAuthStore();
   const router = useRouter();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['posts'],
     queryFn: async () => {
       const res = await api.get('/posts?limit=30');
@@ -42,7 +45,14 @@ export default function CommunityPage() {
         )}
 
         {isLoading ? (
-          <div className="site-empty"><p>글 불러오는 중...</p></div>
+          <SiteLoadingState icon="💬" message="글 불러오는 중..." />
+        ) : isError ? (
+          <SiteErrorState
+            icon="⚠️"
+            title="글 목록을 불러오지 못했습니다"
+            description="네트워크 연결을 확인한 뒤 다시 시도해 주세요."
+            onRetry={() => refetch()}
+          />
         ) : data?.items?.length > 0 ? (
           <div className="community-post-list">
             {data.items.map((post: {
@@ -71,7 +81,9 @@ export default function CommunityPage() {
                 <div className="community-post-row">
                   <div className="community-post-main">
                     <div className="community-post-title">{post.title}</div>
-                    <div className="community-post-excerpt">{post.content}</div>
+                    <div className="community-post-excerpt">
+                      {post.content.length > 120 ? `${post.content.slice(0, 120)}…` : post.content}
+                    </div>
                     <div className="community-post-footer">
                       <Link
                         href={`/profile/${encodeURIComponent(post.user.nickname)}`}
@@ -96,14 +108,22 @@ export default function CommunityPage() {
             ))}
           </div>
         ) : (
-          <div className="site-empty">
-            <p>첫 번째 글을 작성해보세요.</p>
-            {isLoggedIn && (
-              <Link href="/community/write" className="site-btn site-btn-primary" style={{ marginTop: 16 }}>
-                글 쓰기
-              </Link>
-            )}
-          </div>
+          <SiteEmptyState
+            icon="📝"
+            title="아직 작성된 글이 없습니다"
+            description="첫 번째 낚시 이야기를 커뮤니티에 남겨 보세요."
+            action={
+              isLoggedIn ? (
+                <Link href="/community/write" className="site-btn site-btn-primary">
+                  글 쓰기
+                </Link>
+              ) : (
+                <Link href="/auth/login" className="site-btn site-btn-primary">
+                  로그인하고 글 쓰기
+                </Link>
+              )
+            }
+          />
         )}
       </div>
     </main>
