@@ -1,0 +1,19 @@
+{
+  "name": "fishrank",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter web --filter api run dev",
+    "build": "pnpm --filter web --filter api run build",
+    "web": "pnpm --filter web dev",
+    "api": "pnpm --filter api dev",
+    "db:up": "docker compose up -d postgres redis",
+    "db:seed": "pnpm --filter api seed",
+    "import:fish-species": "pnpm --filter api import:fish-species",
+    "sync:fish-info": "pnpm --filter api sync:fish-info"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
