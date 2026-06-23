@@ -1,7 +1,12 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { determineGrade } from '../common/certification/certification-grade.util';
+import {
+  computeImageHash,
+  removeUploadedFile,
+  validatePhotoFreshness,
+} from '../common/upload/image-integrity.util';
 
 
 
@@ -15,6 +20,19 @@ export class CatchesService {
 
   async createCertified(userId: string, file: Express.Multer.File, body: any) {
 
+    if (!file?.path) {
+      throw new BadRequestException('사진 파일이 필요합니다.');
+    }
+
+    const freshness = await validatePhotoFreshness(file.path);
+    if (!freshness.ok) {
+      await removeUploadedFile(file.path);
+      throw new BadRequestException(freshness.reason);
+    }
+
+    const imageHash = await computeImageHash(file.path);
+    await this.assertUniqueImageHash(imageHash, file.path);
+
     const imageUrl = `/uploads/${file.filename}`;
 
 
@@ -26,6 +44,8 @@ export class CatchesService {
         userId,
 
         imageUrl,
+
+        imageHash,
 
         locationName: body.locationName,
 
@@ -70,6 +90,13 @@ export class CatchesService {
 
   async createPersonal(userId: string, file: Express.Multer.File, body: any) {
 
+    if (!file?.path) {
+      throw new BadRequestException('사진 파일이 필요합니다.');
+    }
+
+    const imageHash = await computeImageHash(file.path);
+    await this.assertUniqueImageHash(imageHash, file.path);
+
     const imageUrl = `/uploads/${file.filename}`;
 
     const lengthCm = body.lengthCm ? Number(body.lengthCm) : null;
@@ -85,6 +112,8 @@ export class CatchesService {
         userId,
 
         imageUrl,
+
+        imageHash,
 
         locationName: body.locationName || null,
 
@@ -124,6 +153,22 @@ export class CatchesService {
 
     };
 
+  }
+
+
+
+  private async assertUniqueImageHash(imageHash: string, filePath: string) {
+    const existing = await this.prisma.catch.findFirst({
+      where: { imageHash, deletedAt: null },
+      select: { id: true, userId: true },
+    });
+
+    if (existing) {
+      await removeUploadedFile(filePath);
+      throw new ConflictException(
+        '이미 등록된 사진입니다. 동일 사진 재업로드·타인 사진 도용은 허용되지 않습니다.',
+      );
+    }
   }
 
 
