@@ -22,6 +22,8 @@ import {
 
   Body,
 
+  Headers,
+
   HttpCode,
 
 } from '@nestjs/common';
@@ -35,6 +37,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CatchesService } from './catches.service';
 
 import { createImageUploadInterceptor } from '../common/upload/upload.config';
+import { assertAppUploadChannel } from '../common/upload/upload-channel.util';
 import { UpdatePersonalCatchDto } from './dto/update-personal-catch.dto';
 
 
@@ -71,7 +74,11 @@ export class CatchesController {
 
     @Body() body: any,
 
+    @Headers('x-upload-channel') uploadChannel?: string,
+
   ) {
+
+    assertAppUploadChannel(uploadChannel);
 
     const result = await this.catchesService.createCertified(user.id, file, body);
 
