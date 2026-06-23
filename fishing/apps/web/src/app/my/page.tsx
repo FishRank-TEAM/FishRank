@@ -10,9 +10,11 @@ import { formatTimeAgo, formatLength } from '@/lib/utils';
 import { FISHING_CATEGORY_OPTIONS, formatFishingCategory, KOREAN_REGION_GROUPS, formatActivityRegionLabel, type FishingCategory } from '@/lib/profile';
 import { formatActivityRegion, parseActivityRegion, getDistrictsByProvince } from '@/lib/korean-regions';
 import { IS_BRAG_UPLOAD_ENABLED, IS_CERTIFIED_UPLOAD_ENABLED } from '@/lib/platform';
-import { UploadDisabledInline } from '@/components/UploadDisabledNotice';
+import { getImageUrl } from '@/lib/images';
 import ProfileHeader, { ProfileStatsBar } from '@/components/layout/ProfileHeader';
 import ProfileGearEditor from '@/components/profile/ProfileGearEditor';
+import SiteEmptyState from '@/components/layout/SiteEmptyState';
+import SiteLoadingState from '@/components/layout/SiteLoadingState';
 import BragDetailModal from '@/components/ranking/BragDetailModal';
 import type { RankingItem } from '@/components/RankingCard';
 
@@ -47,10 +49,7 @@ export default function MyPage() {
 
   const { data: meData } = useQuery({
     queryKey: ['me'],
-    queryFn: async () => {
-      const res = await api.get('/users/me');
-      return res.data.data;
-    },
+    queryFn: async () => (await api.get('/users/me')).data.data,
     enabled: isLoggedIn,
   });
 
@@ -95,10 +94,11 @@ export default function MyPage() {
   });
 
   const approvedCertified = catchRecordTab === 'certified'
-    ? (catchesData?.items?.filter((c: any) => c.status === 'approved') ?? [])
+    ? (catchesData?.items?.filter((c: { status: string }) => c.status === 'approved') ?? [])
     : [];
-  const featuredCatches = approvedCertified.filter((c: any) => featuredIds.includes(c.id))
-    .sort((a: any, b: any) => featuredIds.indexOf(a.id) - featuredIds.indexOf(b.id));
+  const featuredCatches = approvedCertified
+    .filter((c: { id: string }) => featuredIds.includes(c.id))
+    .sort((a: { id: string }, b: { id: string }) => featuredIds.indexOf(a.id) - featuredIds.indexOf(b.id));
 
   const districtOptions = getDistrictsByProvince(activityProvince);
 
@@ -123,7 +123,14 @@ export default function MyPage() {
 
   if (!authReady || !isLoggedIn) return null;
 
-  const openBragDetail = (item: any) => {
+  const openBragDetail = (item: {
+    id: string;
+    imageUrl?: string;
+    locationName?: string | null;
+    createdAt: string;
+    memo?: string | null;
+    fishSpecies?: { id?: number; nameKo: string } | null;
+  }) => {
     setBragDetail({
       rank: 0,
       user: {
@@ -133,7 +140,7 @@ export default function MyPage() {
       },
       catch: {
         id: item.id,
-        imageUrl: item.imageUrl,
+        imageUrl: item.imageUrl ?? '',
         locationName: item.locationName ?? undefined,
         createdAt: item.createdAt,
         memo: item.memo ?? null,
@@ -149,7 +156,8 @@ export default function MyPage() {
 
   const stats = meData?.stats;
   const posts = meData?.posts ?? [];
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:4000';
+  const uploadEnabled = catchRecordTab === 'certified' ? IS_CERTIFIED_UPLOAD_ENABLED : IS_BRAG_UPLOAD_ENABLED;
+  const uploadHref = catchRecordTab === 'certified' ? '/upload' : '/upload/personal';
 
   return (
     <main>
@@ -177,10 +185,10 @@ export default function MyPage() {
       )}
 
       <div className="profile-section">
-        <div className="site-container profile-section-inner" style={{ maxWidth: 900 }}>
+        <div className="site-container profile-section-inner profile-page-body">
           <h3 className="profile-section-title">프로필 설정</h3>
-          <div style={{ marginBottom: '14px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: '#546e7a', marginBottom: '6px' }}>자기소개</label>
+          <div style={{ marginBottom: 14 }}>
+            <label className="profile-form-label">자기소개</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
@@ -190,12 +198,12 @@ export default function MyPage() {
               className="site-form-input"
               style={{ width: '100%', resize: 'vertical' }}
             />
-            <div style={{ textAlign: 'right', fontSize: '11px', color: '#90a4ae', marginTop: '4px' }}>{bio.length}/500</div>
+            <div className="profile-char-count">{bio.length}/500</div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '14px' }}>
+          <div className="profile-form-grid">
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: '#546e7a', marginBottom: '6px' }}>주 활동 지역</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label className="profile-form-label">주 활동 지역</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <select
                   value={activityProvince}
                   onChange={(e) => {
@@ -219,11 +227,6 @@ export default function MyPage() {
                   onChange={(e) => setActivityDistrict(e.target.value)}
                   disabled={!activityProvince}
                   className="site-form-select"
-                  style={{
-                    background: activityProvince ? '#fff' : 'var(--surface-muted)',
-                    color: activityDistrict ? undefined : 'var(--text-muted)',
-                    cursor: activityProvince ? 'pointer' : 'not-allowed',
-                  }}
                 >
                   <option value="">시·군·구 선택</option>
                   {districtOptions.map((d) => (
@@ -233,20 +236,14 @@ export default function MyPage() {
               </div>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: '#546e7a', marginBottom: '6px' }}>낚시 유형</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <label className="profile-form-label">낚시 유형</label>
+              <div className="profile-category-group">
                 {FISHING_CATEGORY_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => setFishingCategory(opt.value)}
-                    style={{
-                      flex: 1, padding: '10px 8px', borderRadius: '6px', cursor: 'pointer',
-                      fontSize: '13px', fontWeight: fishingCategory === opt.value ? 700 : 400,
-                      border: fishingCategory === opt.value ? '2px solid #1565c0' : '1px solid #dde3ea',
-                      background: fishingCategory === opt.value ? '#e3f2fd' : '#fff',
-                      color: fishingCategory === opt.value ? '#1565c0' : '#546e7a',
-                    }}
+                    className={`profile-category-btn${fishingCategory === opt.value ? ' active' : ''}`}
                   >
                     {opt.label}
                   </button>
@@ -265,14 +262,14 @@ export default function MyPage() {
       </div>
 
       <div className="profile-section">
-        <div className="site-container profile-section-inner" style={{ maxWidth: 900 }}>
+        <div className="site-container profile-section-inner profile-page-body">
           <h3 className="profile-section-title">내 장비</h3>
           <ProfileGearEditor gears={meData?.gears ?? []} />
         </div>
       </div>
 
       <div className="site-tabs-bar">
-        <div className="site-container site-tabs-inner" style={{ maxWidth: 900 }}>
+        <div className="site-container site-tabs-inner profile-page-body">
           {([
             { key: 'catches' as Tab, label: '낚시 기록' },
             { key: 'posts' as Tab, label: '내가 쓴 글' },
@@ -292,10 +289,9 @@ export default function MyPage() {
         </div>
       </div>
 
-      <div className="site-container site-page-body" style={{ maxWidth: 900 }}>
+      <div className="site-container site-page-body profile-page-body">
         {tab === 'catches' ? (
           <>
-            {/* 기록 유형 서브탭 */}
             <div className="record-type-tabs">
               {([
                 { key: 'certified' as CatchRecordTab, label: '인증 기록', desc: '줄자 인증 · 랭킹 반영' },
@@ -314,148 +310,136 @@ export default function MyPage() {
             </div>
 
             {catchRecordTab === 'certified' && (
-            <div style={{ marginBottom: '24px', background: '#fff', border: '1px solid #dde3ea', borderRadius: '10px', padding: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div>
-                  <h2 style={{ margin: '0 0 4px', fontSize: '16px' }}>⭐ 대표 기록</h2>
-                  <p style={{ margin: 0, fontSize: '12px', color: '#546e7a' }}>프로필 상단에 보여줄 기록을 최대 3개 선택하세요</p>
+              <div className="profile-featured-panel">
+                <div className="profile-featured-head">
+                  <div>
+                    <h2 className="profile-featured-title">⭐ 대표 기록</h2>
+                    <p className="profile-featured-desc">프로필 상단에 보여줄 기록을 최대 3개 선택하세요</p>
+                  </div>
+                  <span className="profile-featured-count">{featuredIds.length}/3</span>
                 </div>
-                <span style={{ fontSize: '12px', color: '#1565c0', fontWeight: 700 }}>{featuredIds.length}/3</span>
+                {featuredCatches.length > 0 ? (
+                  <div className="profile-featured-grid">
+                    {featuredCatches.map((item: {
+                      id: string;
+                      imageUrl?: string;
+                      fishSpecies?: { nameKo: string };
+                      lengthCm: unknown;
+                    }) => (
+                      <div key={item.id} className="profile-featured-card">
+                        <div className="profile-featured-card-img">
+                          {item.imageUrl ? (
+                            <img src={getImageUrl(item.imageUrl)!} alt={item.fishSpecies?.nameKo ?? ''} />
+                          ) : (
+                            <div className="profile-featured-card-placeholder">🐟</div>
+                          )}
+                        </div>
+                        <div className="profile-featured-card-body">
+                          <div className="profile-featured-card-species">{item.fishSpecies?.nameKo ?? '어종'}</div>
+                          <div className="profile-featured-card-length">{formatLength(item.lengthCm as number)}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="profile-inline-empty">
+                    <p>아래 기록에서 ⭐ 버튼을 눌러 대표 기록을 설정하세요</p>
+                  </div>
+                )}
               </div>
-              {featuredCatches.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                  {featuredCatches.map((item: any) => (
-                    <div key={item.id} style={{ border: '2px solid #1565c0', borderRadius: '8px', overflow: 'hidden', background: '#f8fbff' }}>
-                      <div style={{ height: '100px', background: '#e3f2fd' }}>
-                        {item.imageUrl ? (
-                          <img src={`${API_BASE}${item.imageUrl}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' }}>🐟</div>
-                        )}
-                      </div>
-                      <div style={{ padding: '10px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#0b1f3a' }}>{item.fishSpecies?.nameKo ?? '어종'}</div>
-                        <div style={{ fontSize: '16px', fontWeight: 900, color: '#1565c0' }}>{formatLength(item.lengthCm)}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#90a4ae', fontSize: '13px' }}>
-                  아래 기록에서 ⭐ 버튼을 눌러 대표 기록을 설정하세요
-                </div>
-              )}
-            </div>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h2 style={{ margin: 0, fontSize: '16px' }}>
+            <div className="profile-list-head">
+              <h2 className="profile-list-title">
                 {catchRecordTab === 'certified' ? '인증 기록 목록' : '자랑 기록 목록'}
               </h2>
-              {(catchRecordTab === 'certified' ? IS_CERTIFIED_UPLOAD_ENABLED : IS_BRAG_UPLOAD_ENABLED) ? (
-                <Link href={catchRecordTab === 'certified' ? '/upload' : '/upload/personal'} style={{
-                  background: catchRecordTab === 'certified' ? '#1976d2' : '#5c6bc0',
-                  color: '#fff', borderRadius: '5px',
-                  padding: '8px 16px', fontSize: '13px', fontWeight: 700, textDecoration: 'none',
-                }}>
+              {uploadEnabled && (
+                <Link
+                  href={uploadHref}
+                  className={`profile-upload-link ${catchRecordTab === 'certified' ? 'certified' : 'brag'}`}
+                >
                   {catchRecordTab === 'certified' ? '+ 인증 기록' : '+ 자랑 기록'}
                 </Link>
-              ) : (
-                <span style={{
-                  background: '#eceff1', color: '#90a4ae', borderRadius: '5px',
-                  padding: '8px 16px', fontSize: '13px', fontWeight: 700,
-                }}>
-                  📱 앱 전용
-                </span>
               )}
             </div>
 
             {catchesLoading ? (
-              <div style={{ textAlign: 'center', padding: '60px', color: '#546e7a' }}>🎣 기록 불러오는 중...</div>
+              <SiteLoadingState icon="🎣" message="기록 불러오는 중..." compact />
             ) : catchesData?.items?.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {catchesData.items.map((item: any) => {
+              <div className="catch-record-list">
+                {catchesData.items.map((item: {
+                  id: string;
+                  recordType: string;
+                  status: string;
+                  imageUrl?: string;
+                  fishSpecies?: { nameKo: string };
+                  locationName?: string;
+                  createdAt: string;
+                  memo?: string;
+                  lengthCm: unknown;
+                  certification?: { grade: string };
+                }) => {
                   const statusInfo = item.recordType === 'personal'
                     ? PERSONAL_LABEL
                     : (STATUS_LABELS[item.status] ?? STATUS_LABELS.pending);
                   const isFeatured = featuredIds.includes(item.id);
                   const canPin = item.status === 'approved' && item.recordType === 'certified';
+                  const isPersonal = item.recordType === 'personal';
+
                   return (
                     <div
                       key={item.id}
-                      role={item.recordType === 'personal' ? 'button' : undefined}
-                      tabIndex={item.recordType === 'personal' ? 0 : undefined}
-                      onClick={() => {
-                        if (item.recordType === 'personal') openBragDetail(item);
-                      }}
+                      role={isPersonal ? 'button' : undefined}
+                      tabIndex={isPersonal ? 0 : undefined}
+                      onClick={() => { if (isPersonal) openBragDetail(item); }}
                       onKeyDown={(event) => {
-                        if (item.recordType === 'personal' && (event.key === 'Enter' || event.key === ' ')) {
+                        if (isPersonal && (event.key === 'Enter' || event.key === ' ')) {
                           event.preventDefault();
                           openBragDetail(item);
                         }
                       }}
-                      style={{
-                        background: '#fff', border: `1px solid ${isFeatured ? '#1565c0' : '#dde3ea'}`, borderRadius: '8px',
-                        padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '14px',
-                        cursor: item.recordType === 'personal' ? 'pointer' : 'default',
-                      }}
+                      className={`catch-record-row${isFeatured ? ' featured' : ''}${isPersonal ? ' clickable' : ''}`}
                     >
-                      <div style={{
-                        width: '60px', height: '60px', borderRadius: '6px', overflow: 'hidden',
-                        flexShrink: 0, background: '#e3f2fd',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
+                      <div className="catch-record-thumb">
                         {item.imageUrl ? (
-                          <img src={`${API_BASE}${item.imageUrl}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={getImageUrl(item.imageUrl)!} alt={item.fishSpecies?.nameKo ?? ''} />
                         ) : (
-                          <span style={{ fontSize: '24px' }}>🐟</span>
+                          <span>🐟</span>
                         )}
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                      <div className="catch-record-body">
+                        <div className="catch-record-badges">
                           {item.fishSpecies && (
-                            <span style={{ background: '#e3f2fd', color: '#0d47a1', fontSize: '10px', fontWeight: 500, borderRadius: '3px', padding: '2px 7px' }}>
-                              {item.fishSpecies.nameKo}
-                            </span>
+                            <span className="catch-record-badge species">{item.fishSpecies.nameKo}</span>
                           )}
-                          <span style={{ background: statusInfo.bg, color: statusInfo.color, fontSize: '10px', fontWeight: 500, borderRadius: '3px', padding: '2px 7px' }}>
+                          <span className="catch-record-badge" style={{ background: statusInfo.bg, color: statusInfo.color }}>
                             {statusInfo.label}
                             {item.certification?.grade ? ` ${item.certification.grade}` : ''}
                           </span>
                         </div>
-                        <div style={{ fontSize: '12px', color: '#546e7a' }}>
+                        <div className="catch-record-meta">
                           {item.locationName && `📍 ${item.locationName} · `}
                           {formatTimeAgo(item.createdAt)}
                         </div>
-                        {item.recordType === 'personal' && item.memo && (
-                          <div style={{ fontSize: '12px', color: '#5c6bc0', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {item.memo}
-                          </div>
+                        {isPersonal && item.memo && (
+                          <div className="catch-record-memo">{item.memo}</div>
                         )}
                       </div>
-                      {item.recordType === 'personal' ? (
-                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                      {isPersonal ? (
+                        <div className="catch-record-actions">
                           <button
                             type="button"
+                            className="catch-record-action-btn edit"
                             onClick={(event) => {
                               event.stopPropagation();
                               openBragDetail(item);
-                            }}
-                            style={{
-                              padding: '6px 12px',
-                              border: '1px solid #c5cae9',
-                              borderRadius: '6px',
-                              background: '#f3f4ff',
-                              color: '#3949ab',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
                             }}
                           >
                             수정
                           </button>
                           <button
                             type="button"
+                            className="catch-record-action-btn delete"
                             onClick={async (event) => {
                               event.stopPropagation();
                               if (!window.confirm('이 자랑 기록을 삭제할까요?')) return;
@@ -468,24 +452,12 @@ export default function MyPage() {
                                 window.alert('삭제에 실패했습니다.');
                               }
                             }}
-                            style={{
-                              padding: '6px 12px',
-                              border: '1px solid #ef9a9a',
-                              borderRadius: '6px',
-                              background: '#ffebee',
-                              color: '#c62828',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                            }}
                           >
                             삭제
                           </button>
                         </div>
                       ) : (
-                      <div style={{ fontSize: '20px', fontWeight: 900, color: '#0b1f3a', letterSpacing: '-0.5px', flexShrink: 0 }}>
-                        {formatLength(item.lengthCm)}
-                      </div>
+                        <div className="catch-record-length">{formatLength(item.lengthCm as number)}</div>
                       )}
                       {canPin && (
                         <button
@@ -496,13 +468,7 @@ export default function MyPage() {
                           }}
                           disabled={featuredMutation.isPending || (!isFeatured && featuredIds.length >= 3)}
                           title={isFeatured ? '대표 기록 해제' : '대표 기록으로 설정'}
-                          style={{
-                            background: isFeatured ? '#fff8e1' : '#f0f4f8',
-                            border: `1px solid ${isFeatured ? '#ffb300' : '#dde3ea'}`,
-                            borderRadius: '6px', width: '36px', height: '36px', cursor: 'pointer',
-                            fontSize: '16px', flexShrink: 0,
-                            opacity: !isFeatured && featuredIds.length >= 3 ? 0.4 : 1,
-                          }}
+                          className={`catch-record-pin${isFeatured ? ' featured' : ''}`}
                         >
                           {isFeatured ? '⭐' : '☆'}
                         </button>
@@ -512,89 +478,64 @@ export default function MyPage() {
                 })}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '60px', background: '#fff', borderRadius: '8px', border: '1px solid #dde3ea' }}>
-                <div style={{ fontSize: '48px', marginBottom: '12px' }}>🐟</div>
-                <p style={{ color: '#546e7a', marginBottom: '16px' }}>
-                  {catchRecordTab === 'certified' ? '아직 인증 기록이 없습니다' : '아직 자랑 기록이 없습니다'}
-                </p>
-                {(catchRecordTab === 'certified' ? IS_CERTIFIED_UPLOAD_ENABLED : IS_BRAG_UPLOAD_ENABLED) ? (
-                  <Link href={catchRecordTab === 'certified' ? '/upload' : '/upload/personal'} style={{
-                    background: catchRecordTab === 'certified' ? '#1976d2' : '#5c6bc0',
-                    color: '#fff', borderRadius: '5px',
-                    padding: '10px 22px', fontSize: '13px', fontWeight: 700, textDecoration: 'none',
-                  }}>
-                    {catchRecordTab === 'certified' ? '첫 인증 기록 올리기' : '첫 자랑 기록 올리기'}
-                  </Link>
-                ) : (
-                  <div style={{ maxWidth: '320px', margin: '0 auto' }}>
-                    <UploadDisabledInline />
-                  </div>
-                )}
-              </div>
+              <SiteEmptyState
+                icon="🐟"
+                title={catchRecordTab === 'certified' ? '아직 인증 기록이 없습니다' : '아직 자랑 기록이 없습니다'}
+                description={
+                  catchRecordTab === 'certified'
+                    ? '줄자와 함께 촬영한 사진으로 첫 인증 기록을 남겨 보세요.'
+                    : '사진으로 자랑 기록을 남기고 추천 랭킹에 참여해 보세요.'
+                }
+                action={
+                  uploadEnabled ? (
+                    <Link href={uploadHref} className="site-btn site-btn-primary">
+                      {catchRecordTab === 'certified' ? '첫 인증 기록 올리기' : '첫 자랑 기록 올리기'}
+                    </Link>
+                  ) : undefined
+                }
+              />
             )}
           </>
         ) : (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h2 style={{ margin: 0, fontSize: '16px' }}>내가 쓴 글</h2>
-              <Link href="/community/write" style={{
-                background: '#1976d2', color: '#fff', borderRadius: '5px',
-                padding: '8px 16px', fontSize: '13px', fontWeight: 700, textDecoration: 'none',
-              }}>
+            <div className="profile-list-head">
+              <h2 className="profile-list-title">내가 쓴 글</h2>
+              <Link href="/community/write" className="profile-upload-link certified">
                 + 글쓰기
               </Link>
             </div>
 
             {posts.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {posts.map((p: any) => (
-                  <div
-                    key={p.id}
-                    style={{
-                      background: '#fff', border: '1px solid #dde3ea', borderRadius: '8px',
-                      padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px',
-                    }}
-                  >
-                    <Link href={`/community/${p.id}`} style={{ flex: 1, minWidth: 0, textDecoration: 'none' }}>
-                      <div style={{ fontWeight: 700, fontSize: '14px', color: '#1a2332', marginBottom: '6px' }}>
-                        {p.title}
-                      </div>
-                      <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#90a4ae' }}>
+              <div className="profile-post-list">
+                {posts.map((p: {
+                  id: string;
+                  title: string;
+                  createdAt: string;
+                  viewCount: number;
+                  _count?: { comments: number };
+                }) => (
+                  <div key={p.id} className="profile-post-row">
+                    <Link href={`/community/${p.id}`} className="profile-post-link">
+                      <div className="profile-post-title">{p.title}</div>
+                      <div className="profile-post-meta">
                         <span>💬 댓글 {p._count?.comments ?? 0}</span>
                         <span>👁 {p.viewCount}</span>
                         <span>{formatTimeAgo(p.createdAt)}</span>
                       </div>
                     </Link>
-                    <Link
-                      href={`/community/${p.id}/edit`}
-                      style={{
-                        flexShrink: 0,
-                        padding: '6px 12px',
-                        border: '1px solid #c5cae9',
-                        borderRadius: '6px',
-                        background: '#f3f4ff',
-                        color: '#3949ab',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        textDecoration: 'none',
-                      }}
-                    >
+                    <Link href={`/community/${p.id}/edit`} className="catch-record-action-btn edit" style={{ textDecoration: 'none' }}>
                       수정
                     </Link>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '60px', background: '#fff', borderRadius: '8px', border: '1px solid #dde3ea' }}>
-                <div style={{ fontSize: '48px', marginBottom: '12px' }}>📝</div>
-                <p style={{ color: '#546e7a', marginBottom: '16px' }}>아직 작성한 글이 없습니다</p>
-                <Link href="/community/write" style={{
-                  background: '#1976d2', color: '#fff', borderRadius: '5px',
-                  padding: '10px 22px', fontSize: '13px', fontWeight: 700, textDecoration: 'none',
-                }}>
-                  첫 글 작성하기
-                </Link>
-              </div>
+              <SiteEmptyState
+                icon="📝"
+                title="아직 작성한 글이 없습니다"
+                actionHref="/community/write"
+                actionLabel="첫 글 작성하기"
+              />
             )}
           </>
         )}
