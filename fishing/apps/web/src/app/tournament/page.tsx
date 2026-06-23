@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { useAuthStore } from '@/store/auth.store';
 import { getImageUrl } from '@/lib/images';
 import PageHeader from '@/components/layout/PageHeader';
+import SiteEmptyState from '@/components/layout/SiteEmptyState';
+import SiteErrorState from '@/components/layout/SiteErrorState';
+import SiteLoadingState from '@/components/layout/SiteLoadingState';
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
   upcoming: { label: '예정', color: '#1565c0', bg: '#e3f2fd' },
@@ -27,10 +29,8 @@ function formatDate(d: string) {
 
 export default function TournamentPage() {
   const [category, setCategory] = useState('all');
-  const { isLoggedIn } = useAuthStore();
-  const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['tournaments', category],
     queryFn: async () => {
       const res = await api.get(`/tournaments?category=${category}`);
@@ -42,7 +42,7 @@ export default function TournamentPage() {
     <main>
       <PageHeader
         title="낚시 대회"
-        description="줄자 인증 기반 공정한 대회 "
+        description="줄자 인증 기반 공정한 대회"
       />
 
       <div className="site-container site-page-body" style={{ maxWidth: 900 }}>
@@ -60,10 +60,37 @@ export default function TournamentPage() {
         </div>
 
         {isLoading ? (
-          <div className="site-empty"><p>대회 불러오는 중...</p></div>
+          <SiteLoadingState icon="🏆" message="대회 불러오는 중..." />
+        ) : isError ? (
+          <SiteErrorState
+            icon="⚠️"
+            title="대회 목록을 불러오지 못했습니다"
+            onRetry={() => refetch()}
+          />
+        ) : !data?.length ? (
+          <SiteEmptyState
+            icon="🏆"
+            title="진행 중인 대회가 없습니다"
+            description="새 대회가 열리면 이곳에서 확인하고 참가할 수 있습니다."
+            actionHref="/ranking"
+            actionLabel="랭킹 보러 가기"
+          />
         ) : (
           <div className="tournament-grid">
-            {data?.map((t: any) => {
+            {data.map((t: {
+              id: string;
+              status: string;
+              category: string;
+              bannerUrl?: string;
+              title: string;
+              prizeAmount: number;
+              description: string;
+              startAt: string;
+              endAt: string;
+              isFree: boolean;
+              entryFee: number;
+              _count?: { entries: number };
+            }) => {
               const statusInfo = STATUS_MAP[t.status] ?? STATUS_MAP.closed;
               return (
                 <Link key={t.id} href={`/tournament/${t.id}`} style={{ textDecoration: 'none' }}>
