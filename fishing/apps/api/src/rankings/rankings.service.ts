@@ -343,6 +343,47 @@ export class RankingsService {
     return this.fetchRankedCatches(speciesId, true, rankingType, limit);
   }
 
+  async getWeeklySpeciesSpotlight() {
+    const topRanking = await this.getWeeklyRankings(undefined, 1, 'official');
+    const topRankSpecies = topRanking[0]?.fishSpecies?.nameKo ?? null;
+
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const grouped = await this.prisma.catch.groupBy({
+      by: ['fishSpeciesId'],
+      where: {
+        status: 'approved',
+        recordType: 'certified',
+        deletedAt: null,
+        createdAt: { gte: weekAgo },
+        fishSpeciesId: { not: null },
+      },
+      _count: { _all: true },
+      orderBy: { _count: { fishSpeciesId: 'desc' } },
+      take: 1,
+    });
+
+    const topGroup = grouped[0];
+    let popularSpecies: string | null = null;
+    let popularCatchCount = 0;
+
+    if (topGroup?.fishSpeciesId) {
+      const species = await this.prisma.fishSpecies.findUnique({
+        where: { id: topGroup.fishSpeciesId },
+        select: { nameKo: true },
+      });
+      popularSpecies = species?.nameKo ?? null;
+      popularCatchCount = topGroup._count._all;
+    }
+
+    return {
+      topRankSpecies,
+      popularSpecies,
+      popularCatchCount,
+    };
+  }
+
   async getRegionalKings(
     level: RegionLevel,
     periodType: 'weekly' | 'alltime' = 'weekly',

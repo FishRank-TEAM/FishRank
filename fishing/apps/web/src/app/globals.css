@@ -3980,6 +3980,18 @@ h3 { font-size: 16px; font-weight: 700; }
   color: var(--text-muted);
 }
 
+.home-stat-rotate {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.home-stat-rotate.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .home-main-grid {
   display: grid;
   grid-template-columns: 1fr 300px;

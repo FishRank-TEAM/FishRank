@@ -12,15 +12,15 @@ function getWeekLabel() {
 export default function HomeHeroText() {
   return (
     <>
-      <span className="site-section-label">{getWeekLabel()} · 주간 집계</span>
+      <span className="site-section-label">{getWeekLabel()} 주간 랭킹</span>
       <h1 className="home-hero-title">
-        공정한 기록,
+        이번 주 잡은 물고기,
         <br />
-        투명한 낚시 랭킹
+        전국 몇 위?
       </h1>
       <p className="home-hero-desc">
-        줄자 인증으로 남긴 기록이 전국·지역·어종별 순위에 반영됩니다.
-        FishRank와 함께 실력을 데이터로 증명하세요.
+        줄자 인증하고 올리면 전국·지역·어종 순위에 바로 반영됩니다.
+        매주 월요일 집계가 새로 시작됩니다.
       </p>
     </>
   );

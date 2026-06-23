@@ -7,7 +7,7 @@ import HomeSidebar from '@/components/home/HomeSidebar';
 import { fetchHomeData } from '@/lib/server-api';
 
 export default async function HomePage() {
-  const { rankings, tournaments, posts, announcements } = await fetchHomeData();
+  const { rankings, speciesSpotlight, tournaments, posts, announcements } = await fetchHomeData();
 
   return (
     <main className="home">
@@ -25,7 +25,11 @@ export default async function HomePage() {
         </div>
       </HeroBanner>
 
-      <HomeStatsBar rankings={rankings} tournaments={tournaments} />
+      <HomeStatsBar
+        rankings={rankings}
+        tournaments={tournaments}
+        speciesSpotlight={speciesSpotlight}
+      />
 
       <div className="home-container home-main-grid">
         <HomeWeeklyRanking rankings={rankings} />

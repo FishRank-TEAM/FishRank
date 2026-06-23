@@ -51,9 +51,16 @@ export type HomeAnnouncement = {
   createdAt: string;
 };
 
+export type HomeSpeciesSpotlight = {
+  topRankSpecies: string | null;
+  popularSpecies: string | null;
+  popularCatchCount: number;
+};
+
 export async function fetchHomeData() {
-  const [rankingsData, tournaments, postsData, announcements] = await Promise.all([
+  const [rankingsData, speciesSpotlight, tournaments, postsData, announcements] = await Promise.all([
     getJson<{ rankings: HomeRankingItem[] }>('/rankings?periodType=weekly&limit=8'),
+    getJson<HomeSpeciesSpotlight>('/rankings/home-species'),
     getJson<HomeTournament[]>('/tournaments?status=active'),
     getJson<{ items: HomePost[] }>('/posts?limit=5'),
     getJson<HomeAnnouncement[]>('/announcements?limit=3'),
@@ -61,6 +68,11 @@ export async function fetchHomeData() {
 
   return {
     rankings: rankingsData?.rankings ?? [],
+    speciesSpotlight: speciesSpotlight ?? {
+      topRankSpecies: null,
+      popularSpecies: null,
+      popularCatchCount: 0,
+    },
     tournaments: Array.isArray(tournaments) ? tournaments : [],
     posts: postsData?.items ?? [],
     announcements: Array.isArray(announcements) ? announcements : [],

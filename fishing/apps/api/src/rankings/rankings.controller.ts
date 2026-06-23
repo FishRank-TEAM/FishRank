@@ -119,6 +119,13 @@ export class RankingsController {
     return { success: true, data: { periodType: period, feed } };
   }
 
+  @Get('home-species')
+  @ApiOperation({ summary: '메인 홈 — 인기 어종·1위 어종' })
+  async getHomeSpecies() {
+    const data = await this.rankingsService.getWeeklySpeciesSpotlight();
+    return { success: true, data };
+  }
+
   @Get()
   @ApiOperation({ summary: '랭킹 목록 조회' })
   @ApiQuery({ name: 'periodType', required: false, enum: ['weekly', 'alltime'] })
