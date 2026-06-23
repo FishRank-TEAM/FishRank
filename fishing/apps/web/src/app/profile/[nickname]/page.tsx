@@ -10,10 +10,10 @@ import { getImageUrl } from '@/lib/images';
 import { useAuthStore } from '@/store/auth.store';
 import ProfileHeader, { ProfileStatsBar } from '@/components/layout/ProfileHeader';
 import ProfileBioGearSection from '@/components/profile/ProfileBioGearSection';
+import SiteErrorState from '@/components/layout/SiteErrorState';
+import SiteLoadingState from '@/components/layout/SiteLoadingState';
 import BragDetailModal from '@/components/ranking/BragDetailModal';
 import type { RankingItem } from '@/components/RankingCard';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:4000';
 
 export default function ProfilePage({ params }: { params: Promise<{ nickname: string }> }) {
   const { nickname: rawNickname } = use(params);
@@ -22,7 +22,7 @@ export default function ProfilePage({ params }: { params: Promise<{ nickname: st
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuthStore();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['profile', nickname],
     queryFn: async () => {
       const res = await api.get(`/users/profile/${encodeURIComponent(nickname)}`);
@@ -33,20 +33,25 @@ export default function ProfilePage({ params }: { params: Promise<{ nickname: st
 
   if (isLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: '80px', color: '#546e7a' }}>
-        <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎣</div>
-        <p>프로필 불러오는 중...</p>
-      </div>
+      <main className="site-container site-page-body profile-page-body">
+        <SiteLoadingState icon="🎣" message="프로필 불러오는 중..." />
+      </main>
     );
   }
 
-  if (error) {
+  if (error || !data) {
     return (
-      <div style={{ textAlign: 'center', padding: '80px' }}>
-        <div style={{ fontSize: '48px', marginBottom: '12px' }}>😕</div>
-        <p style={{ color: '#546e7a' }}>존재하지 않는 사용자입니다.</p>
-        <Link href="/" style={{ color: '#1565c0', textDecoration: 'none' }}>홈으로 돌아가기</Link>
-      </div>
+      <main className="site-container site-page-body profile-page-body">
+        <SiteErrorState
+          icon="😕"
+          title="존재하지 않는 사용자입니다"
+          description="닉네임을 확인하거나 다른 프로필을 찾아보세요."
+          backHref="/community"
+          backLabel="커뮤니티로"
+          onRetry={() => refetch()}
+          retryLabel="다시 시도"
+        />
+      </main>
     );
   }
 
@@ -54,11 +59,12 @@ export default function ProfilePage({ params }: { params: Promise<{ nickname: st
 
   const openBragDetail = (catchItem: {
     id: string;
-    imageUrl: string;
+    imageUrl?: string;
     locationName?: string | null;
     createdAt: string;
     memo?: string | null;
     fishSpecies?: { id?: number; nameKo: string } | null;
+    lengthCm?: unknown;
   }) => {
     setBragDetail({
       rank: 0,
@@ -69,7 +75,7 @@ export default function ProfilePage({ params }: { params: Promise<{ nickname: st
       },
       catch: {
         id: catchItem.id,
-        imageUrl: catchItem.imageUrl,
+        imageUrl: catchItem.imageUrl ?? '',
         locationName: catchItem.locationName ?? undefined,
         createdAt: catchItem.createdAt,
         memo: catchItem.memo ?? null,
@@ -115,31 +121,35 @@ export default function ProfilePage({ params }: { params: Promise<{ nickname: st
 
       <ProfileBioGearSection bio={user.bio} gears={gears} />
 
-      {/* 대표 기록 */}
       {featuredCatches?.length > 0 && (
-        <div style={{ background: '#fff', borderBottom: '1px solid #dde3ea', padding: '24px 28px' }}>
-          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-            <h2 style={{ margin: '0 0 14px', fontSize: '16px' }}>⭐ 대표 기록</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-              {featuredCatches.map((c: any) => (
-                <div key={c.id} style={{ borderRadius: '10px', overflow: 'hidden', border: '1px solid #dde3ea', background: '#fff' }}>
-                  <div style={{ height: '140px', background: '#e3f2fd' }}>
+        <div className="profile-public-featured">
+          <div className="profile-public-featured-inner">
+            <h2 className="profile-public-section-title">⭐ 대표 기록</h2>
+            <div className="profile-featured-grid">
+              {featuredCatches.map((c: {
+                id: string;
+                imageUrl?: string;
+                fishSpecies?: { nameKo: string };
+                lengthCm: unknown;
+                locationName?: string;
+                createdAt: string;
+              }) => (
+                <div key={c.id} className="profile-featured-card">
+                  <div className="profile-featured-card-img">
                     {c.imageUrl ? (
-                      <img src={getImageUrl(c.imageUrl)!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={getImageUrl(c.imageUrl)!} alt={c.fishSpecies?.nameKo ?? '어종'} />
                     ) : (
-                      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>🐟</div>
+                      <div className="profile-featured-card-placeholder">🐟</div>
                     )}
                   </div>
-                  <div style={{ padding: '12px 14px' }}>
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                  <div className="profile-featured-card-body">
+                    <div className="catch-record-badges">
                       {c.fishSpecies && (
-                        <span style={{ background: '#e3f2fd', color: '#0d47a1', fontSize: '10px', fontWeight: 500, borderRadius: '3px', padding: '2px 7px' }}>
-                          {c.fishSpecies.nameKo}
-                        </span>
+                        <span className="catch-record-badge species">{c.fishSpecies.nameKo}</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '22px', fontWeight: 900, color: '#0b1f3a' }}>{formatLength(c.lengthCm)}</div>
-                    <div style={{ fontSize: '12px', color: '#90a4ae', marginTop: '4px' }}>
+                    <div className="profile-featured-card-length">{formatLength(c.lengthCm as number)}</div>
+                    <div className="catch-record-meta">
                       {c.locationName ? `📍 ${c.locationName}` : formatTimeAgo(c.createdAt)}
                     </div>
                   </div>
@@ -150,123 +160,125 @@ export default function ProfilePage({ params }: { params: Promise<{ nickname: st
         </div>
       )}
 
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '28px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px' }}>
-
-        {/* 인증 기록 */}
+      <div className="profile-public-grid">
         <section>
-          <h2 style={{ margin: '0 0 14px', fontSize: '16px' }}>✅ 인증 기록</h2>
+          <h2 className="profile-public-section-title">✅ 인증 기록</h2>
           {catches.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {catches.map((c: any) => (
-                <div key={c.id} style={{
-                  background: '#fff', border: '1px solid #dde3ea', borderRadius: '8px',
-                  padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px',
-                }}>
-                  <div style={{
-                    width: '52px', height: '52px', borderRadius: '6px', overflow: 'hidden',
-                    background: '#e3f2fd', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
+            <div className="catch-record-list">
+              {catches.map((c: {
+                id: string;
+                imageUrl?: string;
+                fishSpecies?: { nameKo: string };
+                certification?: { grade: string };
+                locationName?: string;
+                createdAt: string;
+                lengthCm: unknown;
+              }) => (
+                <div key={c.id} className="catch-record-row">
+                  <div className="catch-record-thumb">
                     {c.imageUrl ? (
-                      <img src={`${API_BASE}${c.imageUrl}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : <span style={{ fontSize: '20px' }}>🐟</span>}
+                      <img src={getImageUrl(c.imageUrl)!} alt={c.fishSpecies?.nameKo ?? ''} />
+                    ) : (
+                      <span>🐟</span>
+                    )}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '3px' }}>
+                  <div className="catch-record-body">
+                    <div className="catch-record-badges">
                       {c.fishSpecies && (
-                        <span style={{ background: '#e3f2fd', color: '#0d47a1', fontSize: '10px', fontWeight: 500, borderRadius: '3px', padding: '2px 7px' }}>
-                          {c.fishSpecies.nameKo}
-                        </span>
+                        <span className="catch-record-badge species">{c.fishSpecies.nameKo}</span>
                       )}
                       {c.certification?.grade && (
-                        <span style={{ background: '#e8f5e9', color: '#2e7d32', fontSize: '10px', fontWeight: 500, borderRadius: '3px', padding: '2px 7px' }}>
+                        <span className="catch-record-badge" style={{ background: '#e8f5e9', color: '#2e7d32' }}>
                           인증 {c.certification.grade}
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#546e7a' }}>
+                    <div className="catch-record-meta">
                       {c.locationName ? `📍 ${c.locationName}` : formatTimeAgo(c.createdAt)}
                     </div>
                   </div>
-                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#0b1f3a', letterSpacing: '-0.5px', flexShrink: 0 }}>
-                    {formatLength(c.lengthCm)}
-                  </div>
+                  <div className="catch-record-length">{formatLength(c.lengthCm as number)}</div>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ background: '#fff', border: '1px solid #dde3ea', borderRadius: '8px', padding: '32px', textAlign: 'center', color: '#90a4ae' }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎣</div>
-              <p style={{ margin: 0, fontSize: '13px' }}>아직 인증된 기록이 없습니다</p>
+            <div className="profile-inline-empty">
+              <div className="profile-inline-empty-icon">🎣</div>
+              <p>아직 인증된 기록이 없습니다</p>
             </div>
           )}
         </section>
 
-        {/* 커뮤니티 글 */}
         <section>
-          <h2 style={{ margin: '0 0 14px', fontSize: '16px' }}>📝 커뮤니티 글</h2>
+          <h2 className="profile-public-section-title">📝 커뮤니티 글</h2>
           {posts.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {posts.map((p: any) => (
-                <Link key={p.id} href={`/community/${p.id}`} style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    background: '#fff', border: '1px solid #dde3ea', borderRadius: '8px',
-                    padding: '12px 14px', cursor: 'pointer',
-                    transition: 'border-color 0.15s',
-                  }}>
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#1a2332', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {p.title}
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#90a4ae' }}>
+            <div className="profile-post-list">
+              {posts.map((p: {
+                id: string;
+                title: string;
+                viewCount: number;
+                createdAt: string;
+                _count?: { comments: number };
+              }) => (
+                <div key={p.id} className="profile-post-row">
+                  <Link href={`/community/${p.id}`} className="profile-post-link">
+                    <div className="profile-post-title">{p.title}</div>
+                    <div className="profile-post-meta">
                       <span>💬 댓글 {p._count?.comments ?? 0}</span>
                       <span>👁 {p.viewCount}</span>
                       <span>{formatTimeAgo(p.createdAt)}</span>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               ))}
             </div>
           ) : (
-            <div style={{ background: '#fff', border: '1px solid #dde3ea', borderRadius: '8px', padding: '32px', textAlign: 'center', color: '#90a4ae' }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📝</div>
-              <p style={{ margin: 0, fontSize: '13px' }}>작성한 글이 없습니다</p>
+            <div className="profile-inline-empty">
+              <div className="profile-inline-empty-icon">📝</div>
+              <p>작성한 글이 없습니다</p>
             </div>
           )}
         </section>
       </div>
 
-      {/* 자랑 기록 (전체 너비) */}
       {personalCatches?.length > 0 && (
-        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 28px 28px' }}>
+        <div className="profile-public-brag-section">
           <section>
-            <h2 style={{ margin: '0 0 14px', fontSize: '16px' }}>📷 자랑 기록</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
-              {personalCatches.map((c: any) => (
+            <h2 className="profile-public-section-title">📷 자랑 기록</h2>
+            <div className="profile-public-brag-grid">
+              {personalCatches.map((c: {
+                id: string;
+                imageUrl?: string;
+                fishSpecies?: { nameKo: string };
+                lengthCm?: unknown;
+                locationName?: string;
+                createdAt: string;
+                memo?: string;
+              }) => (
                 <button
                   key={c.id}
                   type="button"
                   className="profile-brag-card"
                   onClick={() => openBragDetail(c)}
                 >
-                  <div style={{ height: '120px', background: '#e8eaf6' }}>
+                  <div className="profile-brag-card-img">
                     {c.imageUrl ? (
-                      <img src={getImageUrl(c.imageUrl)!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={getImageUrl(c.imageUrl)!} alt={c.fishSpecies?.nameKo ?? ''} />
                     ) : (
-                      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>🐟</div>
+                      <div className="profile-featured-card-placeholder">🐟</div>
                     )}
                   </div>
-                  <div style={{ padding: '10px 12px' }}>
+                  <div className="profile-brag-card-body">
                     {c.fishSpecies && (
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#5c6bc0', marginBottom: '4px' }}>{c.fishSpecies.nameKo}</div>
+                      <div className="profile-brag-card-species">{c.fishSpecies.nameKo}</div>
                     )}
-                    {c.lengthCm && (
-                      <div style={{ fontSize: '16px', fontWeight: 900, color: '#0b1f3a' }}>{formatLength(c.lengthCm)}</div>
+                    {c.lengthCm != null && (
+                      <div className="profile-brag-card-length">{formatLength(c.lengthCm as number)}</div>
                     )}
-                    <div style={{ fontSize: '11px', color: '#90a4ae', marginTop: '4px' }}>
+                    <div className="profile-brag-card-meta">
                       {c.locationName ? `📍 ${c.locationName}` : formatTimeAgo(c.createdAt)}
                     </div>
-                    {c.memo && (
-                      <div className="profile-brag-card-memo">{c.memo}</div>
-                    )}
+                    {c.memo && <div className="profile-brag-card-memo">{c.memo}</div>}
                   </div>
                 </button>
               ))}
@@ -291,7 +303,6 @@ export default function ProfilePage({ params }: { params: Promise<{ nickname: st
           }}
         />
       )}
-
     </main>
   );
 }
