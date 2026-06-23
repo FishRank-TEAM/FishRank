@@ -63,7 +63,7 @@ export default function SiteFooter() {
           <a href="mailto:qkrrjsgud49@gmail.com" className="site-footer-email">
             qkrrjsgud49@gmail.com
           </a>
-          <p className="site-footer-note">기록 업로드는 모바일 앱에서 제공됩니다.</p>
+          <p className="site-footer-note">공식 인증 랭킹은 모바일 앱(AR+AI) 전용 · 웹에서는 자랑·커뮤니티 이용</p>
         </div>
       </div>
     </footer>
