@@ -14,6 +14,7 @@
     "mobile": "npm run dev --prefix apps/mobile",
     "db:up": "docker compose up -d postgres redis",
     "db:seed": "npm run seed --prefix apps/api",
+    "postinstall": "npm run postinstall --prefix apps/api --if-present",
     "import:fish-species": "npm run import:fish-species --prefix apps/api",
     "sync:fish-info": "npm run sync:fish-info --prefix apps/api"
   },

@@ -149,7 +149,15 @@ npm exec --prefix apps/api prisma studio
 
 ### `pnpm: command not found` / `ERR_PNPM_…` / `Failed to get registry from pnpm`
 
-`apps/web/pnpm-lock.yaml`이 남아 있으면 Next.js가 pnpm을 찾습니다. 삭제 후 `npm install`을 다시 실행하세요. 명령은 **`npm run web`**, **`npm run dev`** 등 npm 기준을 사용합니다.
+Next.js가 전역 `pnpm`을 감지하면 lockfile 패치 중 오류가 납니다. `apps/web` dev 스크립트에 `NEXT_IGNORE_INCORRECT_LOCKFILE=1`이 설정되어 있습니다. 그래도 나오면 `apps/web/pnpm-lock.yaml`이 없는지 확인하고 `npm install`을 다시 실행하세요.
+
+### `@prisma/client did not initialize yet`
+
+```bash
+npm exec --prefix apps/api prisma generate
+```
+
+`npm install` 시 `postinstall`에서 자동 실행되도록 설정되어 있습니다.
 
 ### 웹에서 API 호출 실패 (`ECONNREFUSED`)
 
