@@ -136,6 +136,7 @@ model Catch {
   fishSpeciesId Int?      @map("fish_species_id")
   imageUrl      String    @map("image_url")
   imageThumbUrl String?   @map("image_thumb_url")
+  imageHash     String?   @unique @map("image_hash")
   lengthCm      Decimal?  @map("length_cm") @db.Decimal(5, 1)
   aiLengthCm    Decimal?  @map("ai_length_cm") @db.Decimal(5, 1)
   aiConfidence  Decimal?  @map("ai_confidence") @db.Decimal(4, 3)
