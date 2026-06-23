@@ -31,7 +31,7 @@ export default function HomeWeeklyRanking({ rankings }: Props) {
       {rankings.length === 0 ? (
         <div className="home-empty">
           <p>아직 이번 주 인증 기록이 없습니다.</p>
-          <p className="home-empty-sub">앱에서 첫 기록을 남기면 랭킹에 표시됩니다.</p>
+          <p className="home-empty-sub">공식 인증은 모바일 앱(AR+AI)에서 촬영하면 랭킹에 표시됩니다.</p>
         </div>
       ) : (
         <div className="home-ranking-table-wrap">
