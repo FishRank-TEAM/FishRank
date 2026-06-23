@@ -15,8 +15,7 @@ export default function CertificationFairnessNote({ variant = 'compact', classNa
     return (
       <div className={`cert-fairness-note cert-fairness-note-inline ${className}`.trim()}>
         <p className="cert-fairness-note-lead">
-          <strong>공식 인증</strong>은 모바일 앱에서 AR 가이드 + AI로 <em>실시간 촬영</em>한 기록만 랭킹에 반영됩니다.
-          갤러리·웹 업로드는 허용하지 않아 미리 찍은 사진·도용을 원천 차단합니다.
+          공식 인증은 <strong>앱에서 실시간 촬영</strong>한 기록만 랭킹에 반영됩니다.
         </p>
       </div>
     );
@@ -30,7 +29,7 @@ export default function CertificationFairnessNote({ variant = 'compact', classNa
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <span>⚖️ 공식 인증 — 앱 AR+AI 실시간 촬영 전용</span>
+        <span>형평성 · 앱 촬영 전용</span>
         <span aria-hidden>{open ? '▲' : '▼'}</span>
       </button>
       {open && (

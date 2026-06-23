@@ -20,7 +20,7 @@ export default function CertificationGradeGuide({ variant = 'full', className = 
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
         >
-          <span>인증 등급 기준 (S / A / B)</span>
+          <span>등급 기준 (S/A/B)</span>
           <span aria-hidden>{open ? '▲' : '▼'}</span>
         </button>
         {open && <GradeTable />}

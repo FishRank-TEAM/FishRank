@@ -6,7 +6,6 @@ import RankingTabs from '@/components/RankingTabs';
 import RankingFilters from '@/components/ranking/RankingFilters';
 import RankingTypeTabs from '@/components/ranking/RankingTypeTabs';
 import CertificationGradeGuide from '@/components/certification/CertificationGradeGuide';
-import CertificationFairnessNote from '@/components/certification/CertificationFairnessNote';
 import { RankingFilterProvider, useRankingFilters } from '@/components/ranking/RankingFilterContext';
 import { isValidRankingSpeciesId } from '@/lib/ranking.constants';
 import { IS_BRAG_UPLOAD_ENABLED, IS_CERTIFIED_UPLOAD_ENABLED } from '@/lib/platform';
@@ -71,10 +70,7 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
             {!IS_CERTIFIED_UPLOAD_ENABLED ? (
               <div className="ranking-app-only-notice">
                 <span className="ranking-app-only-notice-icon" aria-hidden>📱</span>
-                <span>
-                  공식 인증 랭킹은 <strong>모바일 앱</strong>에서 AR+AI로 촬영한 기록만 반영됩니다.
-                  웹에서는 조회·자랑 기록만 가능합니다.
-                </span>
+                <span>공식 랭킹은 앱 촬영 기록만 반영 · 웹은 조회·자랑</span>
               </div>
             ) : (
               <div className="ranking-certified-upload-inline">
@@ -84,7 +80,6 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
                 </Link>
               </div>
             )}
-            <CertificationFairnessNote variant="compact" className="ranking-fairness-note" />
             <CertificationGradeGuide variant="compact" className="ranking-grade-guide" />
           </>
         )}
