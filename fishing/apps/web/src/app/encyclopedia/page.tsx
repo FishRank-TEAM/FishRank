@@ -6,6 +6,9 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { getImageUrl } from '@/lib/images';
 import PageHeader from '@/components/layout/PageHeader';
+import SiteEmptyState from '@/components/layout/SiteEmptyState';
+import SiteErrorState from '@/components/layout/SiteErrorState';
+import SiteLoadingState from '@/components/layout/SiteLoadingState';
 import {
   ENCYCLOPEDIA_SORT_OPTIONS,
   ENCYCLOPEDIA_TECHNIQUE_OPTIONS,
@@ -82,7 +85,7 @@ export default function EncyclopediaPage() {
     },
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['encyclopedia', category, query, page, sort, technique],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -208,15 +211,21 @@ export default function EncyclopediaPage() {
         </div>
 
         {isLoading ? (
-          <div className="site-empty"><p>사진 불러오는 중...</p></div>
+          <SiteLoadingState icon="🐟" message="어종 정보 불러오는 중..." />
+        ) : isError ? (
+          <SiteErrorState
+            icon="⚠️"
+            title="어종 사전을 불러오지 못했습니다"
+            onRetry={() => refetch()}
+          />
         ) : !data?.items.length ? (
-          <div className="site-empty">
-            <p>
-              {technique !== 'all' || query
-                ? '조건에 맞는 어종이 없습니다. 필터를 바꿔 보세요.'
-                : '검색 결과가 없습니다.'}
-            </p>
-          </div>
+          <SiteEmptyState
+            icon="🔍"
+            title={technique !== 'all' || query ? '조건에 맞는 어종이 없습니다' : '검색 결과가 없습니다'}
+            description="다른 검색어나 필터를 시도해 보세요."
+            actionHref="/encyclopedia"
+            actionLabel="전체 목록 보기"
+          />
         ) : (
           <>
             <div className="encyclopedia-photo-grid">
