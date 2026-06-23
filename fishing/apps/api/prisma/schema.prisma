@@ -1,0 +1,330 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  nickname     String    @unique
+  passwordHash String?   @map("password_hash")
+  provider     String    @default("email")   // email | kakao | google
+  providerId   String?   @map("provider_id")
+  profileImage String?   @map("profile_image")
+  bio          String?   @db.VarChar(500)
+  activityRegion String? @map("activity_region")   // 주 활동 지역
+  fishingCategory String? @map("fishing_category") // freshwater | saltwater | both
+  featuredCatchIds String[] @default([]) @map("featured_catch_ids")
+  role         String    @default("user")    // user | admin
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  catches          Catch[]
+  rankings         Ranking[]
+  posts            Post[]
+  comments         Comment[]
+  tournamentEntries TournamentEntry[]
+  catchVotes       CatchVote[]
+  contentReports   ContentReport[]
+  encyclopediaTips FishEncyclopediaTip[]
+  gears            UserGear[]
+  announcements    Announcement[]
+  encyclopediaEdits FishEncyclopediaEditLog[]
+
+  @@map("users")
+}
+
+model UserGear {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  title       String   @db.VarChar(80)
+  description String?  @db.VarChar(500)
+  imageUrl    String?  @map("image_url")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_gears")
+}
+
+model FishSpecies {
+  id              Int      @id @default(autoincrement())
+  nameKo          String   @map("name_ko")
+  nameEn          String?  @map("name_en")
+  scientificName  String?  @unique @map("scientific_name")
+  category        String   @default("freshwater") @map("category") // freshwater | saltwater
+  rarityWeight    Decimal  @default(1.0) @map("rarity_weight") @db.Decimal(3, 1)
+  minLengthCm     Int?     @map("min_length_cm")
+  imageUrl        String?  @map("image_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  catches     Catch[]
+  rankings    Ranking[]
+  encyclopedia FishEncyclopedia?
+  tips        FishEncyclopediaTip[]
+  editLogs    FishEncyclopediaEditLog[]
+
+  @@map("fish_species")
+}
+
+model FishEncyclopedia {
+  id             Int     @id @default(autoincrement())
+  fishSpeciesId  Int     @unique @map("fish_species_id")
+  description    String
+  habitat        String?                   // 서식지
+  season         String?                   // 낚시 시즌
+  bait           String?                   // 추천 미끼
+  technique      String?                   // 낚시 기법
+  avgLengthCm    Int?    @map("avg_length_cm")
+  maxLengthCm    Int?    @map("max_length_cm")
+  imageUrl       String? @map("image_url")
+  isForbidden    Boolean @default(false) @map("is_forbidden")  // 금지 어종
+  minSizeLaw     Int?    @map("min_size_law")                  // 법적 최소 사이즈(cm)
+
+  fishSpecies FishSpecies @relation(fields: [fishSpeciesId], references: [id])
+
+  @@map("fish_encyclopedia")
+}
+
+// 낚시인이 보완·수정한 실전 정보
+model FishEncyclopediaTip {
+  id            String   @id @default(uuid())
+  fishSpeciesId Int      @map("fish_species_id")
+  userId        String   @map("user_id")
+  season        String?
+  bait          String?
+  technique     String?
+  habitat       String?
+  note          String?
+  summary       String?
+  imageUrl      String?  @map("image_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  fishSpecies FishSpecies @relation(fields: [fishSpeciesId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([fishSpeciesId])
+  @@map("fish_encyclopedia_tips")
+}
+
+model FishEncyclopediaEditLog {
+  id            String   @id @default(uuid())
+  fishSpeciesId Int      @map("fish_species_id")
+  userId        String   @map("user_id")
+  changes       Json
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  fishSpecies FishSpecies @relation(fields: [fishSpeciesId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([fishSpeciesId, createdAt])
+  @@map("fish_encyclopedia_edit_logs")
+}
+
+model Catch {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  fishSpeciesId Int?      @map("fish_species_id")
+  imageUrl      String    @map("image_url")
+  imageThumbUrl String?   @map("image_thumb_url")
+  lengthCm      Decimal?  @map("length_cm") @db.Decimal(5, 1)
+  aiLengthCm    Decimal?  @map("ai_length_cm") @db.Decimal(5, 1)
+  aiConfidence  Decimal?  @map("ai_confidence") @db.Decimal(4, 3)
+  rankScore     Decimal?  @map("rank_score") @db.Decimal(8, 2)
+  locationLat   Decimal?  @map("location_lat") @db.Decimal(9, 6)
+  locationLng   Decimal?  @map("location_lng") @db.Decimal(9, 6)
+  locationName  String?   @map("location_name")
+  recordType    String    @default("certified") @map("record_type") // certified | personal
+  status        String    @default("pending")
+  memo          String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  user          User            @relation(fields: [userId], references: [id])
+  fishSpecies   FishSpecies?    @relation(fields: [fishSpeciesId], references: [id])
+  certification Certification?
+  rankings      Ranking[]
+  votes         CatchVote[]
+
+  @@map("catches")
+}
+
+model CatchVote {
+  id        String   @id @default(uuid())
+  catchId   String   @map("catch_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  catch Catch @relation(fields: [catchId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([catchId, userId])
+  @@index([catchId])
+  @@map("catch_votes")
+}
+
+model ContentReport {
+  id         String   @id @default(uuid())
+  targetType String   @map("target_type") // catch | post
+  targetId   String   @map("target_id")
+  reporterId String   @map("reporter_id")
+  reason     String   @db.VarChar(100)
+  detail     String?  @db.VarChar(500)
+  status     String   @default("open") // open | dismissed | resolved
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([targetType, targetId, reporterId])
+  @@index([targetType, targetId, status])
+  @@map("content_reports")
+}
+
+model Certification {
+  id                String    @id @default(uuid())
+  catchId           String    @unique @map("catch_id")
+  grade             String
+  rulerDetected     Boolean   @default(false) @map("ruler_detected")
+  rulerStartPx      Int?      @map("ruler_start_px")
+  rulerEndPx        Int?      @map("ruler_end_px")
+  rulerLengthCm     Decimal?  @map("ruler_length_cm") @db.Decimal(5, 1)
+  speciesDetected   String?   @map("species_detected")
+  speciesConfidence Decimal?  @map("species_confidence") @db.Decimal(4, 3)
+  ruleFlat          Boolean   @default(false) @map("rule_flat")
+  ruleVertical      Boolean   @default(false) @map("rule_vertical")
+  ruleRuler         Boolean   @default(false) @map("rule_ruler")
+  ruleFullBody      Boolean   @default(false) @map("rule_full_body")
+  processedAt       DateTime? @map("processed_at")
+  errorMessage      String?   @map("error_message")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  catch Catch @relation(fields: [catchId], references: [id])
+
+  @@map("certifications")
+}
+
+model Ranking {
+  id            Int      @id @default(autoincrement())
+  periodType    String   @map("period_type")
+  periodKey     String   @map("period_key")
+  fishSpeciesId Int?     @map("fish_species_id")
+  userId        String   @map("user_id")
+  catchId       String   @map("catch_id")
+  rank          Int
+  rankScore     Decimal  @map("rank_score") @db.Decimal(8, 2)
+  lengthCm      Decimal  @map("length_cm") @db.Decimal(5, 1)
+  calculatedAt  DateTime @default(now()) @map("calculated_at")
+
+  user        User         @relation(fields: [userId], references: [id])
+  catch       Catch        @relation(fields: [catchId], references: [id])
+  fishSpecies FishSpecies? @relation(fields: [fishSpeciesId], references: [id])
+
+  @@unique([periodType, periodKey, fishSpeciesId, rank])
+  @@map("rankings")
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  catchId   String?   @map("catch_id")
+  title     String
+  content   String
+  imageUrl  String?   @map("image_url")
+  viewCount Int       @default(0) @map("view_count")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  comments Comment[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  postId    String    @map("post_id")
+  userId    String    @map("user_id")
+  content   String
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("comments")
+}
+
+// 대회 시스템
+model Tournament {
+  id            String    @id @default(uuid())
+  title         String
+  description   String
+  category      String    // freshwater | saltwater | all
+  fishSpeciesId Int?      @map("fish_species_id")
+  isFree        Boolean   @default(true) @map("is_free")
+  entryFee      Int       @default(0) @map("entry_fee")    // 원 단위
+  prize         String?                                     // 상금 설명
+  prizeAmount   Int?      @map("prize_amount")              // 원 단위
+  maxEntries    Int?      @map("max_entries")
+  startAt       DateTime  @map("start_at")
+  endAt         DateTime  @map("end_at")
+  status        String    @default("upcoming")              // upcoming | active | closed | finished
+  bannerUrl     String?   @map("banner_url")
+  rules         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  entries TournamentEntry[]
+
+  @@map("tournaments")
+}
+
+model TournamentEntry {
+  id             String    @id @default(uuid())
+  tournamentId   String    @map("tournament_id")
+  userId         String    @map("user_id")
+  paymentStatus  String    @default("free") @map("payment_status")  // free | pending | paid | refunded
+  paymentAmount  Int       @default(0) @map("payment_amount")
+  paymentTxId    String?   @map("payment_tx_id")                    // 결제 트랜잭션 ID
+  bestLengthCm   Decimal?  @map("best_length_cm") @db.Decimal(5, 1)
+  bestCatchId    String?   @map("best_catch_id")
+  rank           Int?
+  joinedAt       DateTime  @default(now()) @map("joined_at")
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([tournamentId, userId])
+  @@map("tournament_entries")
+}
+
+model Announcement {
+  id          String    @id @default(uuid())
+  type        String    @default("notice") // notice | event
+  title       String
+  content     String
+  linkUrl     String?   @map("link_url")
+  isPinned    Boolean   @default(false) @map("is_pinned")
+  isPublished Boolean   @default(true) @map("is_published")
+  startsAt    DateTime? @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+  createdBy   String    @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  author User @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([isPublished, isPinned])
+  @@map("announcements")
+}
