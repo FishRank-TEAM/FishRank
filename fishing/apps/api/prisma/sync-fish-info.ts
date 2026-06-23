@@ -55,8 +55,8 @@ function isDbConnectionError(err: unknown): boolean {
 function printDbHelp() {
   console.error('\n❌ PostgreSQL에 연결할 수 없습니다 (localhost:5433).');
   console.error('   1. Docker Desktop 실행');
-  console.error('   2. pnpm db:up');
-  console.error('   3. pnpm sync:fish-info\n');
+  console.error('   2. npm run db:up');
+  console.error('   3. npm run sync:fish-info\n');
 }
 
 main().catch((err) => {

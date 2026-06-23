@@ -8,7 +8,7 @@
 
 ```
 - Node.js >= 20.x
-- pnpm >= 9.x
+- npm >= 10.x
 - Python >= 3.11
 - Docker Desktop
 - AWS CLI (S3 사용 시)
@@ -18,10 +18,13 @@
 
 ```bash
 git clone https://github.com/your-org/fishrank.git
-cd fishrank
+cd fishrank/fishing
 
-# Node.js 의존성 (monorepo)
-pnpm install
+# Node.js 의존성 (npm workspaces)
+npm install
+```
+
+> 로컬 실행 명령어 전체는 [11. 로컬 개발 실행 가이드](./11-local-development.md)를 참고하세요.
 
 # Python 의존성 (AI 서버)
 cd ai

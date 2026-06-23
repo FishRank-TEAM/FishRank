@@ -38,7 +38,7 @@ function KakaoMapError({ message }: { message: string }) {
         <br />
         3. JavaScript SDK 도메인에 <strong>http://localhost:3000</strong> 등록
         <br />
-        4. 변경 후 <strong>pnpm dev</strong> 재시작
+        4. 변경 후 <strong>npm run dev</strong> 재시작
       </p>
     </div>
   );

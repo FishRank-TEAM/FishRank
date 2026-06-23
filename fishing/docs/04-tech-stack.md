@@ -167,17 +167,17 @@ fishing/
 │   └── types/         # 공통 TypeScript 타입 정의
 ├── docs/              # 이 문서들
 ├── docker-compose.yml
-├── package.json       # workspace root (pnpm workspaces)
-└── pnpm-workspace.yaml
+├── package.json       # workspace root (npm workspaces)
+└── package-lock.json
 ```
 
 ### 패키지 매니저
 
 ```
-pnpm workspaces
+npm workspaces
 ```
 
-이유: 모노레포에서 가장 빠름, 디스크 절약, 타입 공유 용이
+이유: 팀 표준 npm 사용, 모노레포 앱·공유 패키지 일괄 설치
 
 ---
 
@@ -186,13 +186,13 @@ pnpm workspaces
 ```bash
 # 필수 설치
 node >= 20.x
-pnpm >= 9.x
+npm >= 10.x
 python >= 3.11
 docker
 
-# 로컬 실행
+# 로컬 실행 — 상세: docs/11-local-development.md
 docker-compose up -d        # PostgreSQL + Redis 시작
-pnpm install                # 의존성 설치
-pnpm dev                    # web + api 동시 실행
+npm install                 # 의존성 설치
+npm run dev                 # web + api 동시 실행
 cd ai && uvicorn main:app   # AI 서버 별도 실행
 ```
