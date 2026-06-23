@@ -1,0 +1,64 @@
+/* ── Shared page states (loading / empty / error) ── */
+
+.site-state {
+  text-align: center;
+  padding: 56px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.site-state-compact {
+  padding: 36px 20px;
+}
+
+.site-state-icon {
+  font-size: 44px;
+  margin-bottom: 14px;
+  line-height: 1;
+}
+
+.site-state-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.site-state-desc {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+
+.site-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.site-state-error {
+  border-color: #ffcdd2;
+  background: #fff8f8;
+}
+
+.site-state-error .site-state-title {
+  color: #c62828;
+}
+
+.site-state-loading .site-state-icon {
+  animation: siteStatePulse 1.4s ease-in-out infinite;
+}
+
+@keyframes siteStatePulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-state-loading .site-state-icon {
+    animation: none;
+  }
+}
