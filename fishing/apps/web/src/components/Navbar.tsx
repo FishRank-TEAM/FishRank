@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const NAV_LINKS = [
   { href: '/', label: '홈', exact: true },
@@ -22,6 +22,7 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const isHome = pathname === '/';
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -34,66 +35,178 @@ export default function Navbar() {
     if (me) updateUser(me);
   }, [me, updateUser]);
 
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [drawerOpen]);
+
   const showAdmin = user?.role === 'admin' || me?.role === 'admin';
 
   const handleLogout = () => {
     logout();
+    setDrawerOpen(false);
     router.push('/');
   };
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);
 
-  return (
-    <nav className={`site-nav${isHome ? ' site-nav-overlay' : ''}`}>
-      <div className="site-nav-inner">
-        <Link href="/" className="site-nav-logo">
-          Fish<span>Rank</span>
-        </Link>
+  const navLinkClass = (href: string, exact?: boolean) =>
+    `${href.startsWith('/') && !exact ? 'site-nav-link' : 'site-nav-link'}${isActive(href, exact) ? ' active' : ''}`;
 
-        <div className="site-nav-menu">
-          {NAV_LINKS.map((link) => {
-            const active = isActive(link.href, link.exact);
-            return (
+  const drawerLinkClass = (href: string, exact?: boolean) =>
+    `site-nav-drawer-link${isActive(href, exact) ? ' active' : ''}`;
+
+  return (
+    <>
+      <nav className={`site-nav${isHome ? ' site-nav-overlay' : ''}`}>
+        <div className="site-nav-inner">
+          <Link href="/" className="site-nav-logo">
+            Fish<span>Rank</span>
+          </Link>
+
+          <div className="site-nav-menu site-nav-desktop-only">
+            {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`site-nav-link${active ? ' active' : ''}`}
+                className={navLinkClass(link.href, link.exact)}
               >
                 {link.label}
               </Link>
-            );
-          })}
-        </div>
+            ))}
+          </div>
 
-        <div className="site-nav-actions">
-          {isLoggedIn ? (
-            <>
-              {showAdmin && (
-                <Link href="/admin" className="site-nav-btn-ghost">관리자</Link>
+          <div className="site-nav-actions">
+            <div className="site-nav-actions-desktop site-nav-desktop-only">
+              {isLoggedIn ? (
+                <>
+                  {showAdmin && (
+                    <Link href="/admin" className="site-nav-btn-ghost">관리자</Link>
+                  )}
+                  {user?.nickname && (
+                    <Link href="/my" className="site-nav-user">
+                      <span className="site-nav-avatar">{user.nickname[0]}</span>
+                      <span className="site-nav-nickname">{user.nickname}</span>
+                    </Link>
+                  )}
+                  <button type="button" onClick={handleLogout} className="site-nav-btn-ghost site-nav-logout-desktop">
+                    로그아웃
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth/login" className="site-nav-btn-ghost">로그인</Link>
+                  <Link href="/auth/register" className="site-nav-btn-primary">회원가입</Link>
+                </>
               )}
-              {user?.nickname && (
-                <Link href="/my" className="site-nav-user">
+            </div>
+
+            <div className="site-nav-mobile-only">
+              {isLoggedIn && user?.nickname && (
+                <Link href="/my" className="site-nav-user" aria-label="내 프로필">
                   <span className="site-nav-avatar">{user.nickname[0]}</span>
-                  <span className="site-nav-nickname">{user.nickname}</span>
                 </Link>
               )}
-              <button type="button" onClick={handleLogout} className="site-nav-btn-ghost">
+              <button
+                type="button"
+                className={`site-nav-toggle${drawerOpen ? ' open' : ''}`}
+                onClick={() => setDrawerOpen((v) => !v)}
+                aria-expanded={drawerOpen}
+                aria-controls="site-nav-drawer"
+                aria-label={drawerOpen ? '메뉴 닫기' : '메뉴 열기'}
+              >
+                <span className="site-nav-toggle-icon" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div
+        className={`site-nav-drawer-backdrop${drawerOpen ? ' open' : ''}`}
+        onClick={() => setDrawerOpen(false)}
+        aria-hidden={!drawerOpen}
+      />
+
+      <aside
+        id="site-nav-drawer"
+        className={`site-nav-drawer${drawerOpen ? ' open' : ''}`}
+        aria-hidden={!drawerOpen}
+      >
+        <div className="site-nav-drawer-head">
+          <Link href="/" className="site-nav-drawer-logo" onClick={() => setDrawerOpen(false)}>
+            Fish<span>Rank</span>
+          </Link>
+          <button
+            type="button"
+            className="site-nav-drawer-close"
+            onClick={() => setDrawerOpen(false)}
+            aria-label="메뉴 닫기"
+          >
+            ✕
+          </button>
+        </div>
+
+        <nav className="site-nav-drawer-links" aria-label="모바일 메뉴">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={drawerLinkClass(link.href, link.exact)}
+              onClick={() => setDrawerOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+          {isLoggedIn && (
+            <>
+              <Link href="/my" className={drawerLinkClass('/my')} onClick={() => setDrawerOpen(false)}>
+                내 프로필
+              </Link>
+              <Link href="/upload/personal" className="site-nav-drawer-link" onClick={() => setDrawerOpen(false)}>
+                자랑 기록 올리기
+              </Link>
+              {showAdmin && (
+                <Link href="/admin" className={drawerLinkClass('/admin')} onClick={() => setDrawerOpen(false)}>
+                  관리자
+                </Link>
+              )}
+            </>
+          )}
+        </nav>
+
+        <div className="site-nav-drawer-foot">
+          {isLoggedIn ? (
+            <>
+              {user?.nickname && (
+                <Link href="/my" className="site-nav-drawer-user" onClick={() => setDrawerOpen(false)}>
+                  <span className="site-nav-avatar">{user.nickname[0]}</span>
+                  <span className="site-nav-drawer-user-name">{user.nickname}</span>
+                </Link>
+              )}
+              <button type="button" className="site-nav-drawer-btn site-nav-drawer-btn-ghost" onClick={handleLogout}>
                 로그아웃
               </button>
             </>
           ) : (
             <>
-              <Link href="/auth/login" className="site-nav-btn-ghost">
+              <Link href="/auth/login" className="site-nav-drawer-btn site-nav-drawer-btn-ghost" onClick={() => setDrawerOpen(false)}>
                 로그인
               </Link>
-              <Link href="/auth/register" className="site-nav-btn-primary">
+              <Link href="/auth/register" className="site-nav-drawer-btn site-nav-drawer-btn-primary" onClick={() => setDrawerOpen(false)}>
                 회원가입
               </Link>
             </>
           )}
         </div>
-      </div>
-    </nav>
+      </aside>
+    </>
   );
 }
