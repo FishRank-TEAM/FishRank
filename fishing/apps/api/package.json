@@ -20,8 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "prisma db seed",
-    "db:up": "pnpm -C ../.. db:up",
-    "db:seed": "pnpm -C ../.. db:seed",
+    "db:up": "npm run db:up --prefix ../..",
+    "db:seed": "npm run db:seed --prefix ../..",
     "import:fish-species": "ts-node prisma/import-fish-species.ts",
     "sync:fish-info": "ts-node prisma/sync-fish-info.ts"
   },
