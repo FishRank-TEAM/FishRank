@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ReviewCatchDto } from './dto/review-catch.dto';
 import type { UpsertAnnouncementDto } from './dto/upsert-announcement.dto';
+import type { UpdateFeedbackDto } from './dto/update-feedback.dto';
 
 @Injectable()
 export class AdminService {
@@ -12,6 +13,7 @@ export class AdminService {
     const [
       pendingCatches,
       flaggedReports,
+      openFeedbacks,
       totalCatches,
       totalPosts,
       activeTournaments,
@@ -20,6 +22,7 @@ export class AdminService {
     ] = await Promise.all([
       this.prisma.catch.count({ where: { deletedAt: null, status: 'pending', recordType: 'certified' } }),
       this.countFlaggedReports(3),
+      this.prisma.userFeedback.count({ where: { status: 'open' } }),
       this.prisma.catch.count({ where: { deletedAt: null } }),
       this.prisma.post.count({ where: { deletedAt: null } }),
       this.prisma.tournament.count({ where: { status: { in: ['upcoming', 'active'] } } }),
@@ -47,9 +50,17 @@ export class AdminService {
       take: 5,
     });
 
+    const recentFeedbacks = await this.prisma.userFeedback.findMany({
+      where: { status: 'open' },
+      include: { user: { select: { nickname: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
     return {
       pendingCatches,
       flaggedReports,
+      openFeedbacks,
       totalCatches,
       totalPosts,
       activeTournaments,
@@ -58,6 +69,7 @@ export class AdminService {
       recentPending,
       recentFlagged,
       recentPosts,
+      recentFeedbacks,
       generatedAt: now.toISOString(),
     };
   }
@@ -338,6 +350,38 @@ export class AdminService {
         endsAt: true,
         createdAt: true,
       },
+    });
+  }
+
+  async listFeedbacks(status?: string, page = 1, limit = 20) {
+    const where = status && status !== 'all' ? { status } : {};
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      this.prisma.userFeedback.findMany({
+        where,
+        include: { user: { select: { id: true, nickname: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.userFeedback.count({ where }),
+    ]);
+
+    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async updateFeedback(id: string, dto: UpdateFeedbackDto) {
+    const existing = await this.prisma.userFeedback.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('피드백을 찾을 수 없습니다.');
+
+    return this.prisma.userFeedback.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        adminNote: dto.adminNote?.trim() || null,
+      },
+      include: { user: { select: { id: true, nickname: true } } },
     });
   }
 }
