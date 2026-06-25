@@ -31,6 +31,7 @@ model User {
   tournamentEntries TournamentEntry[]
   catchVotes       CatchVote[]
   contentReports   ContentReport[]
+  userFeedbacks    UserFeedback[]
   encyclopediaTips FishEncyclopediaTip[]
   gears            UserGear[]
   announcements    Announcement[]
@@ -60,7 +61,7 @@ model FishSpecies {
   nameKo          String   @map("name_ko")
   nameEn          String?  @map("name_en")
   scientificName  String?  @unique @map("scientific_name")
-  category        String   @default("freshwater") @map("category") // freshwater | saltwater
+  category        String   @default("freshwater") @map("category") // freshwater | saltwater | both
   rarityWeight    Decimal  @default(1.0) @map("rarity_weight") @db.Decimal(3, 1)
   minLengthCm     Int?     @map("min_length_cm")
   imageUrl        String?  @map("image_url")
@@ -156,6 +157,7 @@ model Catch {
   certification Certification?
   rankings      Ranking[]
   votes         CatchVote[]
+  posts         Post[]
 
   @@map("catches")
 }
@@ -189,6 +191,23 @@ model ContentReport {
   @@unique([targetType, targetId, reporterId])
   @@index([targetType, targetId, status])
   @@map("content_reports")
+}
+
+model UserFeedback {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  category  String   // bug | feature | improvement | other
+  content   String   @db.VarChar(2000)
+  status    String   @default("open") // open | in_progress | resolved | dismissed
+  adminNote String?  @map("admin_note") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@map("user_feedbacks")
 }
 
 model Certification {
@@ -241,12 +260,14 @@ model Post {
   title     String
   content   String
   imageUrl  String?   @map("image_url")
+  tags      String[]  @default([])
   viewCount Int       @default(0) @map("view_count")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
   user     User      @relation(fields: [userId], references: [id])
+  catch    Catch?    @relation(fields: [catchId], references: [id])
   comments Comment[]
 
   @@map("posts")
