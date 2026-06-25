@@ -1,8 +1,13 @@
 import axios from 'axios';
 import { UPLOAD_CHANNEL_APP } from '@fishrank/shared';
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from './storage';
+import { resolveApiBaseUrl } from './api-url';
 
-const baseURL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+export const baseURL = resolveApiBaseUrl();
+
+if (__DEV__) {
+  console.log('[FishRank] API base URL:', baseURL);
+}
 
 export const api = axios.create({
   baseURL,
@@ -98,5 +103,3 @@ export async function uploadCertifiedCatch(
     },
   });
 }
-
-export { baseURL };
