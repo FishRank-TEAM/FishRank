@@ -24,3 +24,7 @@ npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Accidental local artifacts
+fishing/node
+fishing/fishrank@1.0.0
