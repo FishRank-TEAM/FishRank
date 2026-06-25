@@ -5,22 +5,25 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { getImageUrl } from '@/lib/images';
-import PageHeader from '@/components/layout/PageHeader';
+import PageBanner from '@/components/layout/PageBanner';
 import SiteEmptyState from '@/components/layout/SiteEmptyState';
 import SiteErrorState from '@/components/layout/SiteErrorState';
 import SiteLoadingState from '@/components/layout/SiteLoadingState';
+import { useAuthStore } from '@/store/auth.store';
 import {
   ENCYCLOPEDIA_SORT_OPTIONS,
   ENCYCLOPEDIA_TECHNIQUE_OPTIONS,
   type EncyclopediaSort,
   type EncyclopediaTechnique,
 } from '@/lib/encyclopedia-filters';
+import {
+  FISH_CATEGORY_FILTER_TABS,
+  getFishCategoryBadgeClass,
+  getFishCategoryEmoji,
+  getFishCategoryLabel,
+} from '@fishrank/shared';
 
-const CAT_TABS = [
-  { key: 'all', label: '전체' },
-  { key: 'freshwater', label: '민물' },
-  { key: 'saltwater', label: '바다' },
-];
+const CAT_TABS = FISH_CATEGORY_FILTER_TABS;
 
 const PAGE_SIZE = 24;
 
@@ -50,6 +53,7 @@ type EncyclopediaStats = {
   total: number;
   freshwater: number;
   saltwater: number;
+  both: number;
 };
 
 function FishCardImage({ nameKo, category, imageUrl }: { nameKo: string; category: string; imageUrl: string | null }) {
@@ -64,12 +68,13 @@ function FishCardImage({ nameKo, category, imageUrl }: { nameKo: string; categor
 
   return (
     <div className={`encyclopedia-card-photo encyclopedia-card-photo--placeholder ${category}`}>
-      <span>{category === 'saltwater' ? '🐠' : '🐟'}</span>
+      <span>{getFishCategoryEmoji(category)}</span>
     </div>
   );
 }
 
 export default function EncyclopediaPage() {
+  const { isLoggedIn } = useAuthStore();
   const [category, setCategory] = useState('all');
   const [sort, setSort] = useState<EncyclopediaSort>('name');
   const [technique, setTechnique] = useState<EncyclopediaTechnique>('all');
@@ -108,16 +113,26 @@ export default function EncyclopediaPage() {
 
   return (
     <main>
-      <PageHeader
-        title="어종 사전"
-        description="사진·시즌·미끼 — 필요한 정보만"
-      />
-
       <div className="site-container site-page-body" style={{ maxWidth: 1100 }}>
+        <PageBanner
+          title="어종 사전"
+          description="사진·시즌·미끼 — 필요한 정보만"
+          action={
+            isLoggedIn ? (
+              <Link
+                href="/encyclopedia/new"
+                className="shrink-0 rounded-lg bg-[#22C55E] px-5 py-2 text-sm font-semibold text-white no-underline transition hover:bg-[#1db954]"
+              >
+                + 어종 추가
+              </Link>
+            ) : undefined
+          }
+        />
+
         {stats && (
           <p className="post-meta-muted encyclopedia-list-stats">
             전체 {stats.total.toLocaleString()}종 · 민물 {stats.freshwater.toLocaleString()} · 바다{' '}
-            {stats.saltwater.toLocaleString()}
+            {stats.saltwater.toLocaleString()} · 민·바다 {stats.both.toLocaleString()}
           </p>
         )}
 
@@ -222,9 +237,13 @@ export default function EncyclopediaPage() {
           <SiteEmptyState
             icon="🔍"
             title={technique !== 'all' || query ? '조건에 맞는 어종이 없습니다' : '검색 결과가 없습니다'}
-            description="다른 검색어나 필터를 시도해 보세요."
-            actionHref="/encyclopedia"
-            actionLabel="전체 목록 보기"
+            description={
+              isLoggedIn
+                ? '찾는 어종이 없으면 직접 추가해 보세요.'
+                : '다른 검색어나 필터를 시도해 보세요.'
+            }
+            actionHref={isLoggedIn ? '/encyclopedia/new' : '/encyclopedia'}
+            actionLabel={isLoggedIn ? '어종 추가하기' : '전체 목록 보기'}
           />
         ) : (
           <>
@@ -243,10 +262,8 @@ export default function EncyclopediaPage() {
                   <div className="encyclopedia-photo-card-body">
                     <div className="encyclopedia-photo-card-top">
                       <h3 className="encyclopedia-card-name">{item.nameKo}</h3>
-                      <span
-                        className={`site-badge ${item.category === 'saltwater' ? 'site-badge-blue' : 'site-badge-green'}`}
-                      >
-                        {item.category === 'saltwater' ? '바다' : '민물'}
+                      <span className={`site-badge ${getFishCategoryBadgeClass(item.category)}`}>
+                        {getFishCategoryLabel(item.category)}
                       </span>
                     </div>
                     {item.hint && (
