@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 
@@ -219,6 +219,22 @@ export class TournamentsController {
     if (bannerUrl) dto.bannerUrl = bannerUrl;
 
     const result = await this.tournamentsService.update(user.id, id, dto);
+
+    return { success: true, data: result };
+
+  }
+
+  @Delete(':id')
+
+  @UseGuards(JwtAuthGuard)
+
+  @ApiBearerAuth()
+
+  @ApiOperation({ summary: '[어드민] 대회 삭제' })
+
+  async remove(@Param('id') id: string, @CurrentUser() user: any) {
+
+    const result = await this.tournamentsService.delete(user.id, id);
 
     return { success: true, data: result };
 
