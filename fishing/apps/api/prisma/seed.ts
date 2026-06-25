@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import 'dotenv/config';
 import { seedRankingBulk } from './seed-ranking-bulk';
+import { seedImagePath } from './seed-fish-images';
+import { ensureSeedFishImages } from './download-seed-images';
 
 const prisma = new PrismaClient();
 
@@ -162,7 +164,7 @@ async function seedDemoUsers(passwordHash: string) {
       update: {
         userId: c.userId,
         fishSpeciesId: c.fishSpeciesId,
-        imageUrl: `/uploads/seed-${c.fishSpeciesId}.jpg`,
+        imageUrl: seedImagePath(c.fishSpeciesId),
         lengthCm: c.lengthCm,
         aiLengthCm: c.lengthCm,
         aiConfidence: c.recordType === 'certified' ? 0.94 : null,
@@ -178,7 +180,7 @@ async function seedDemoUsers(passwordHash: string) {
         id: c.id,
         userId: c.userId,
         fishSpeciesId: c.fishSpeciesId,
-        imageUrl: `/uploads/seed-${c.fishSpeciesId}.jpg`,
+        imageUrl: seedImagePath(c.fishSpeciesId),
         lengthCm: c.lengthCm,
         aiLengthCm: c.lengthCm,
         aiConfidence: c.recordType === 'certified' ? 0.94 : null,
@@ -256,6 +258,8 @@ async function seedDemoUsers(passwordHash: string) {
       userId: DEMO.users.geoje,
       title: '거제 외포 참돔 78cm — 이번 주 최고 기록',
       content: '새벽 4시 출조해서 드디어 70 넘는 참돔 떴습니다. 줄자 인증 S등급 나왔어요.',
+      imageUrl: seedImagePath(8),
+      tags: ['catch', 'review'],
       createdAt: daysAgo(2),
     },
     {
@@ -263,6 +267,8 @@ async function seedDemoUsers(passwordHash: string) {
       userId: DEMO.users.chuncheon,
       title: '소양강 배스 61cm 랭킹 올렸습니다',
       content: '스피너베이트로 입질 한 방. AI 측정도 깔끔하게 통과했네요.',
+      imageUrl: seedImagePath(1),
+      tags: ['catch', 'gear'],
       createdAt: daysAgo(1),
     },
     {
@@ -270,6 +276,8 @@ async function seedDemoUsers(passwordHash: string) {
       userId: DEMO.users.yeosu,
       title: '여수 돌산 광어 포인트 공유',
       content: '돌산대교 근처 수심 12m 지점에서 광어 70cm대. 활미끼 추천합니다.',
+      imageUrl: seedImagePath(9),
+      tags: ['point', 'tip'],
       createdAt: daysAgo(3),
     },
     {
@@ -277,6 +285,8 @@ async function seedDemoUsers(passwordHash: string) {
       userId: DEMO.users.jeju,
       title: '제주 한림 가물치 88cm',
       content: '민물 포인트에서 대형 가물치. 줄자 인증 처음 해봤는데 생각보다 간단하네요.',
+      imageUrl: seedImagePath(3),
+      tags: ['catch', 'review'],
       createdAt: daysAgo(0),
     },
     {
@@ -284,6 +294,8 @@ async function seedDemoUsers(passwordHash: string) {
       userId: DEMO.users.han,
       title: '한강 뚝섬 붕어 낚시 후기',
       content: '주말 아침 뚝섬에서 붕어 32cm. 인증 기록은 작지만 만족합니다.',
+      imageUrl: seedImagePath(4),
+      tags: ['review', 'point'],
       createdAt: daysAgo(5),
     },
   ];
@@ -295,6 +307,8 @@ async function seedDemoUsers(passwordHash: string) {
         userId: p.userId,
         title: p.title,
         content: p.content,
+        imageUrl: p.imageUrl ?? null,
+        tags: p.tags ?? [],
         createdAt: p.createdAt,
         deletedAt: null,
       },
@@ -303,6 +317,8 @@ async function seedDemoUsers(passwordHash: string) {
         userId: p.userId,
         title: p.title,
         content: p.content,
+        imageUrl: p.imageUrl ?? null,
+        tags: p.tags ?? [],
         createdAt: p.createdAt,
       },
     });
@@ -483,6 +499,7 @@ async function main() {
   }
 
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+  await ensureSeedFishImages();
   await seedDemoUsers(passwordHash);
   await seedRankingBulk(prisma, passwordHash);
 
