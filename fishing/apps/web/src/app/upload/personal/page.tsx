@@ -95,7 +95,7 @@ function PersonalUploadPageInner() {
         체장·줄자 입력 없이 가볍게 자랑해 보세요.
       </p>
       <p style={{ margin: '0 0 28px', fontSize: '12px' }}>
-        <Link href="/upload" style={{ color: '#1565c0', textDecoration: 'none', fontWeight: 700 }}>
+        <Link href="/upload" style={{ color: '#0A2540', textDecoration: 'none', fontWeight: 700 }}>
           줄자 인증 기록은 여기 →
         </Link>
       </p>
