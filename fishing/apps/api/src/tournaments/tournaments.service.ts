@@ -103,4 +103,20 @@ export class TournamentsService {
 
     return this.prisma.tournament.update({ where: { id }, data: dto });
   }
+
+  // 어드민: 대회 삭제
+  async delete(adminId: string, id: string) {
+    const admin = await this.prisma.user.findUnique({ where: { id: adminId } });
+    if (admin?.role !== 'admin') throw new ForbiddenException();
+
+    const existing = await this.prisma.tournament.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('대회를 찾을 수 없습니다.');
+
+    await this.prisma.$transaction([
+      this.prisma.tournamentEntry.deleteMany({ where: { tournamentId: id } }),
+      this.prisma.tournament.delete({ where: { id } }),
+    ]);
+
+    return { deleted: true };
+  }
 }
