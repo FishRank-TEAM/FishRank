@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 
@@ -104,6 +116,33 @@ export class UsersController {
   }
 
 
+
+  @Patch('me/profile-image')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: '프로필 사진 변경' })
+  @UseInterceptors(createImageUploadInterceptor('image', 'profile'))
+  async updateProfileImage(
+    @CurrentUser() user: any,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    const profileImage = saveUploadedFile(file);
+    if (!profileImage) {
+      throw new BadRequestException('이미지 파일이 필요합니다.');
+    }
+    const updated = await this.usersService.updateProfileImage(user.id, profileImage);
+    return { success: true, data: updated };
+  }
+
+  @Delete('me/profile-image')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '프로필 사진 삭제' })
+  async deleteProfileImage(@CurrentUser() user: any) {
+    const updated = await this.usersService.updateProfileImage(user.id, null);
+    return { success: true, data: updated };
+  }
 
   @Patch('me/featured-catches')
 
