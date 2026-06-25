@@ -19,7 +19,7 @@ export const ENCYCLOPEDIA_FIELD_LABELS: Record<EncyclopediaEditField, string> = 
 };
 
 export type EncyclopediaEditChange = {
-  field: EncyclopediaEditField;
+  field: EncyclopediaEditField | 'category';
   label: string;
   oldValue: string | null;
   newValue: string | null;
