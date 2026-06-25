@@ -310,7 +310,7 @@ export class CatchesService {
 
           fishSpecies: true,
 
-          certification: { select: { grade: true } },
+          certification: { select: { grade: true, errorMessage: true } },
 
         },
 
