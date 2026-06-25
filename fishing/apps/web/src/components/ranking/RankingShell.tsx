@@ -12,6 +12,7 @@ import { IS_BRAG_UPLOAD_ENABLED, IS_CERTIFIED_UPLOAD_ENABLED } from '@/lib/platf
 import Link from 'next/link';
 import { preloadKakaoMap } from '@/lib/kakao-map-loader';
 import { loadSidoGeoJson } from '@/lib/geo/geoJsonLoader';
+import PageBanner from '@/components/layout/PageBanner';
 
 function RankingShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -46,8 +47,13 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="ranking-page">
+      <PageBanner
+        title="랭킹"
+        description="인증 기록 · rank_score 기준"
+        className="mb-6"
+      />
+
       <header className="ranking-page-head">
-        <h1 className="ranking-page-title">랭킹</h1>
         <RankingTypeTabs />
         <RankingTabs />
         <RankingFilters
