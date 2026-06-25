@@ -7,6 +7,7 @@ import { formatTimeAgo, formatLength } from '@/lib/utils';
 import { useRankingFilters } from '@/components/ranking/RankingFilterContext';
 import RankBadge from '@/components/ranking/RankBadge';
 import RankingEmptyState from '@/components/ranking/RankingEmptyState';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 type OvertakeItem = {
   overtaker: { id: string; nickname: string; profileImage: string | null };
@@ -62,6 +63,11 @@ export default function RankingOvertakeFeed({
         <ul className={`ranking-overtake-list${layout === 'row' ? ' ranking-overtake-list-row' : ''}`}>
           {data.map((item, i) => (
             <li key={`${item.overtaker.id}-${item.occurredAt}-${i}`} className="ranking-overtake-item">
+              <UserAvatar
+                nickname={item.overtaker.nickname}
+                profileImage={item.overtaker.profileImage}
+                className="ranking-overtake-avatar"
+              />
               <RankBadge rank={item.newRank} />
               <div className="ranking-overtake-body">
                 <p className="ranking-overtake-line">
