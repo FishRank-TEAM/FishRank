@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { seedImagePath, variantCount } from './seed-fish-images';
 
 /** 랭킹 UI에서 사용하는 6개 어종 (fish_species.id) */
 export const RANKING_SPECIES_IDS = [1, 2, 3, 8, 9, 10] as const;
@@ -7,7 +8,14 @@ const CERTIFIED_PER_SPECIES = 120;
 const PERSONAL_PER_SPECIES = 30;
 export const BULK_USER_COUNT = 150;
 
-const NICK_PREFIX = ['낚시', '포인트', '챔비', '루어', '베이트', '릴', '캐스', '지깅', '한강', '바다'];
+const SPECIES_NAMES: Record<number, string> = {
+  1: '배스',
+  2: '쏘가리',
+  3: '가물치',
+  8: '참돔',
+  9: '광어',
+  10: '우럭',
+};
 const NICK_SUFFIX = ['왕', '고수', '마스터', '헌터', '킹', '조사', '러', '맨', '프로', '캡틴'];
 
 const SPOTS = [
@@ -70,9 +78,11 @@ function bulkCatchId(speciesId: number, seq: number, personal: boolean): string 
 }
 
 function nickname(i: number): string {
-  const p = NICK_PREFIX[i % NICK_PREFIX.length];
-  const s = NICK_SUFFIX[Math.floor(i / NICK_PREFIX.length) % NICK_SUFFIX.length];
-  return `${p}${s}${i + 1}`;
+  const speciesId = RANKING_SPECIES_IDS[i % RANKING_SPECIES_IDS.length];
+  const name = SPECIES_NAMES[speciesId];
+  const tier = Math.floor(i / RANKING_SPECIES_IDS.length);
+  const suffix = NICK_SUFFIX[tier % NICK_SUFFIX.length];
+  return `${name}${suffix}${tier + 1}`;
 }
 
 function daysAgo(n: number, hour = 10): Date {
@@ -171,6 +181,7 @@ export async function seedRankingBulk(prisma: PrismaClient, passwordHash: string
     locationLng: number;
     recordType: 'certified' | 'personal';
     grade?: 'S' | 'A' | 'B';
+    imageVariant: number;
     createdAt: Date;
   };
 
@@ -195,6 +206,7 @@ export async function seedRankingBulk(prisma: PrismaClient, passwordHash: string
         locationLng: spot.lng + (rand() - 0.5) * 0.02,
         recordType: 'certified',
         grade: gradeForLength(lengthCm, meta.minCm, meta.maxCm),
+        imageVariant: (seq - 1) % variantCount(speciesId),
         createdAt: daysAgo(days, 8 + (seq % 10)),
       });
     }
@@ -215,6 +227,7 @@ export async function seedRankingBulk(prisma: PrismaClient, passwordHash: string
         locationLat: spot.lat + (rand() - 0.5) * 0.015,
         locationLng: spot.lng + (rand() - 0.5) * 0.015,
         recordType: 'personal',
+        imageVariant: (seq - 1) % variantCount(speciesId),
         createdAt: daysAgo(days, 14 + (seq % 8)),
       });
     }
@@ -230,7 +243,7 @@ export async function seedRankingBulk(prisma: PrismaClient, passwordHash: string
       id: c.id,
       userId: c.userId,
       fishSpeciesId: c.fishSpeciesId,
-      imageUrl: `/uploads/seed-${c.fishSpeciesId}.jpg`,
+      imageUrl: seedImagePath(c.fishSpeciesId, c.imageVariant),
       lengthCm: c.lengthCm,
       aiLengthCm: c.lengthCm,
       aiConfidence: c.recordType === 'certified' ? 0.9 + rand() * 0.08 : null,
