@@ -6,6 +6,7 @@ import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload
 import { isEncyclopediaSort, isEncyclopediaTechnique } from './encyclopedia-filter.util';
 import { EncyclopediaService } from './encyclopedia.service';
 import { CreateEncyclopediaTipDto } from './dto/create-encyclopedia-tip.dto';
+import { CreateFishSpeciesDto } from './dto/create-fish-species.dto';
 
 @ApiTags('어종 사전')
 @Controller('encyclopedia')
@@ -47,6 +48,21 @@ export class EncyclopediaController {
   @ApiOperation({ summary: '어종 사전 통계' })
   async getStats() {
     const data = await this.encyclopedia.getStats();
+    return { success: true, data };
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: '어종 새로 등록 (로그인 필요)' })
+  @UseInterceptors(createImageUploadInterceptor('image', 'encyclopedia'))
+  async createSpecies(
+    @CurrentUser() user: { id: string },
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() dto: CreateFishSpeciesDto,
+  ) {
+    const data = await this.encyclopedia.createSpecies(user.id, dto, saveUploadedFile(file));
     return { success: true, data };
   }
 
