@@ -8,6 +8,9 @@ export const IS_BRAG_UPLOAD_ENABLED = true;
 export const IS_CATCH_UPLOAD_ENABLED =
   IS_CERTIFIED_UPLOAD_ENABLED && IS_BRAG_UPLOAD_ENABLED;
 
+export const HOME_HERO_DESC =
+  '앱에서 줄자 인증하면 전국·지역·어종 순위에 들어가요. 웹에서는 랭킹 보기와 자랑 기록을 올릴 수 있어요.';
+
 export const CATCH_UPLOAD_DISABLED_MESSAGE =
   '공식 인증 기록은 모바일 앱에서 AR 가이드 + AI 줄자 인식으로 촬영한 사진만 랭킹에 반영됩니다. 갤러리·웹 업로드는 허용되지 않습니다.';
 
