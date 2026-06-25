@@ -5,6 +5,7 @@ import { getImageUrl } from '@/lib/images';
 import { formatLength } from '@/lib/utils';
 import RankingCard from '@/components/RankingCard';
 import RankingEmptyState from '@/components/ranking/RankingEmptyState';
+import UserAvatar from '@/components/ui/UserAvatar';
 import type { RegionalKingSummary } from '@/components/map/RegionPolygonLayer';
 
 type Props = {
@@ -51,14 +52,11 @@ export default function RegionalKingPanel({
           <p className="regional-king-badge">👑 {regionName} 낚시왕</p>
           <div className="regional-king-profile">
             <div className="regional-king-avatar">
-              {king.user.profileImage ? (
-                <img
-                  src={getImageUrl(king.user.profileImage) ?? ''}
-                  alt={king.user.nickname}
-                />
-              ) : (
-                king.user.nickname[0]
-              )}
+              <UserAvatar
+                nickname={king.user.nickname}
+                profileImage={king.user.profileImage}
+                className="user-avatar-fill"
+              />
             </div>
             <div className="regional-king-info">
               <Link href={`/profile/${king.user.nickname}`} className="regional-king-name">
