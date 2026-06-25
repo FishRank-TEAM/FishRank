@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useEffect, useState } from 'react';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 const NAV_LINKS = [
   { href: '/', label: '홈', exact: true },
@@ -47,6 +48,7 @@ export default function Navbar() {
   }, [drawerOpen]);
 
   const showAdmin = user?.role === 'admin' || me?.role === 'admin';
+  const profileImage = me?.profileImage ?? user?.profileImage;
 
   const handleLogout = () => {
     logout();
@@ -92,7 +94,11 @@ export default function Navbar() {
                   )}
                   {user?.nickname && (
                     <Link href="/my" className="site-nav-user">
-                      <span className="site-nav-avatar">{user.nickname[0]}</span>
+                      <UserAvatar
+                        nickname={user.nickname}
+                        profileImage={profileImage}
+                        className="site-nav-avatar"
+                      />
                       <span className="site-nav-nickname">{user.nickname}</span>
                     </Link>
                   )}
@@ -111,7 +117,11 @@ export default function Navbar() {
             <div className="site-nav-mobile-only">
               {isLoggedIn && user?.nickname && (
                 <Link href="/my" className="site-nav-user" aria-label="내 프로필">
-                  <span className="site-nav-avatar">{user.nickname[0]}</span>
+                  <UserAvatar
+                    nickname={user.nickname}
+                    profileImage={profileImage}
+                    className="site-nav-avatar"
+                  />
                 </Link>
               )}
               <button
@@ -187,7 +197,11 @@ export default function Navbar() {
             <>
               {user?.nickname && (
                 <Link href="/my" className="site-nav-drawer-user" onClick={() => setDrawerOpen(false)}>
-                  <span className="site-nav-avatar">{user.nickname[0]}</span>
+                  <UserAvatar
+                    nickname={user.nickname}
+                    profileImage={profileImage}
+                    className="site-nav-avatar"
+                  />
                   <span className="site-nav-drawer-user-name">{user.nickname}</span>
                 </Link>
               )}
