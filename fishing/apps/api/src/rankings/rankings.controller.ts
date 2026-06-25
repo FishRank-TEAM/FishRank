@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Header } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { RankingsService } from './rankings.service';
 @ApiTags('랭킹')
@@ -127,6 +127,7 @@ export class RankingsController {
   }
 
   @Get()
+  @Header('Cache-Control', 'public, max-age=60')
   @ApiOperation({ summary: '랭킹 목록 조회' })
   @ApiQuery({ name: 'periodType', required: false, enum: ['weekly', 'alltime'] })
   @ApiQuery({ name: 'speciesId', required: false, type: Number })
