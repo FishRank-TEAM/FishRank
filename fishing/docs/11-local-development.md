@@ -109,9 +109,20 @@ npm run mobile
 | Metro | http://localhost:8081 |
 | 앱 경로 | `apps/mobile` |
 | LAN 모드 | QR에 PC IP가 표시됨 (`--lan`) |
-| 터널 모드 | `npm run dev:tunnel --prefix apps/mobile` (Wi-Fi 다를 때) |
+| 터널 모드 | `npm run dev:tunnel -w mobile` (Wi-Fi 다를 때) |
+| 종료 후 cmd 창 잔류 (Windows) | `npm run mobile:stop` |
 
 Expo Go에서 QR 스캔 후 접속합니다. **Expo Go SDK 버전과 프로젝트 SDK(54)가 일치**해야 합니다.
+
+모바일 앱은 `EXPO_PUBLIC_API_URL`이 없으면 **Expo LAN 모드 Metro IP**로 API(`:4000/api/v1`)를 자동 연결합니다. API는 `0.0.0.0`에 바인딩되어 실기기에서 접근 가능합니다.
+
+```bash
+# API만 별도 실행 (모바일 개발 시 필수)
+npm run api
+
+# 데모 로그인 (시드 후)
+# han@fishrank.demo / Fish1234!
+```
 
 ---
 
@@ -176,6 +187,18 @@ API가 꺼져 있거나 `NEXT_PUBLIC_API_URL`이 잘못되었을 수 있습니�
 ### 포트 이미 사용 중
 
 해당 포트를 쓰는 기존 프로세스를 종료한 뒤 다시 실행합니다. (예: 3000 — 이전 Next dev, 8081 — 이전 Metro)
+
+### 모바일 `npm run mobile` 종료 후 cmd 창이 계속 뜸 (Windows)
+
+Expo/Metro 자식 프로세스가 남아 있을 때 발생합니다.
+
+```bash
+# fishing 루트에서
+npm run mobile:stop
+```
+
+- 모바일은 `node scripts/mobile-dev.mjs`로 실행합니다 (`expo.cmd` / 중첩 npm 없이 node가 CLI 직접 실행).
+- **Ctrl+C 한 번**으로 종료되면 정상입니다. cmd 창이 계속 뜨면 위 `mobile:stop` 실행 후 다시 `npm run mobile` 하세요.
 
 ---
 
