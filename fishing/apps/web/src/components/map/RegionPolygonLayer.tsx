@@ -93,7 +93,7 @@ function RegionPolygonLayer({ map, level, kingsByRegion, onRegionSelect }: Props
 
     const defaultStyle = (hasKing: boolean) => ({
       strokeWeight: 2,
-      strokeColor: hasKing ? '#1565c0' : '#546e7a',
+      strokeColor: hasKing ? '#0A2540' : '#546e7a',
       fillColor: hasKing ? '#64b5f6' : '#ffffff',
       fillOpacity: hasKing ? 0.35 : 0.12,
     });
@@ -145,8 +145,8 @@ function RegionPolygonLayer({ map, level, kingsByRegion, onRegionSelect }: Props
               }
 
               polygon.setOptions({
-                fillColor: '#1976d2',
-                strokeColor: '#0d47a1',
+                fillColor: '#0A2540',
+                strokeColor: '#0A2540',
                 strokeWeight: 3,
                 fillOpacity: 0.65,
               });
