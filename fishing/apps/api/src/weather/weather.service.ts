@@ -93,22 +93,34 @@ type SlotDraft = Partial<WeatherSlot> & { time: string; date: string; hour: numb
 
 @Injectable()
 export class WeatherService {
-  private readonly cache = new Map<string, { data: WeatherSummary; expiresAt: number }>();
-  private readonly cacheTtlMs = 3 * 60 * 1000;
+  private readonly cache = new Map<
+    string,
+    { data: WeatherSummary; expiresAt: number; staleUntil: number }
+  >();
+  /** fresh TTL */
+  private readonly cacheTtlMs = 5 * 60 * 1000;
+  /** stale 허용 — 기상청 지연 시 즉시 응답 */
+  private readonly staleTtlMs = 30 * 60 * 1000;
+  private readonly kmaFetchTimeoutMs = 6_000;
+  private readonly inflight = new Map<string, Promise<WeatherSummary>>();
 
   constructor(private config: ConfigService) {}
 
-  private getCachedWeather(nx: number, ny: number): WeatherSummary | null {
-    const entry = this.cache.get(`${nx},${ny}`);
-    if (!entry || Date.now() > entry.expiresAt) {
-      if (entry) this.cache.delete(`${nx},${ny}`);
-      return null;
-    }
-    return entry.data;
+  private cacheKey(nx: number, ny: number) {
+    return `${nx},${ny}`;
+  }
+
+  private getCacheEntry(nx: number, ny: number) {
+    return this.cache.get(this.cacheKey(nx, ny)) ?? null;
   }
 
   private setCachedWeather(nx: number, ny: number, data: WeatherSummary) {
-    this.cache.set(`${nx},${ny}`, { data, expiresAt: Date.now() + this.cacheTtlMs });
+    const now = Date.now();
+    this.cache.set(this.cacheKey(nx, ny), {
+      data,
+      expiresAt: now + this.cacheTtlMs,
+      staleUntil: now + this.staleTtlMs,
+    });
   }
 
   async getWeather(lat: number, lng: number, label?: string): Promise<WeatherSummary> {
@@ -120,11 +132,54 @@ export class WeatherService {
     }
 
     const { nx, ny } = latLngToGrid(lat, lng);
-    const cached = this.getCachedWeather(nx, ny);
-    if (cached) {
-      return { ...cached, location: { ...cached.location, lat, lng, label } };
+    const now = Date.now();
+    const entry = this.getCacheEntry(nx, ny);
+
+    if (entry && now <= entry.expiresAt) {
+      return { ...entry.data, location: { ...entry.data.location, lat, lng, label } };
     }
 
+    if (entry && now <= entry.staleUntil) {
+      void this.fetchAndCacheWeather(lat, lng, label, nx, ny, serviceKey).catch(() => {});
+      return { ...entry.data, location: { ...entry.data.location, lat, lng, label } };
+    }
+
+    return this.fetchAndCacheWeather(lat, lng, label, nx, ny, serviceKey);
+  }
+
+  private fetchAndCacheWeather(
+    lat: number,
+    lng: number,
+    label: string | undefined,
+    nx: number,
+    ny: number,
+    serviceKey: string,
+  ): Promise<WeatherSummary> {
+    const key = this.cacheKey(nx, ny);
+    const pending = this.inflight.get(key);
+    if (pending) return pending;
+
+    const promise = this.buildWeather(lat, lng, label, nx, ny, serviceKey)
+      .then((summary) => {
+        this.setCachedWeather(nx, ny, summary);
+        return summary;
+      })
+      .finally(() => {
+        this.inflight.delete(key);
+      });
+
+    this.inflight.set(key, promise);
+    return promise;
+  }
+
+  private async buildWeather(
+    lat: number,
+    lng: number,
+    label: string | undefined,
+    nx: number,
+    ny: number,
+    serviceKey: string,
+  ): Promise<WeatherSummary> {
     const ncstBase = getNcstBaseTime();
     const ultraFcstBase = getFcstBaseTime();
     const vilageBase = getVilageBaseTime();
@@ -264,7 +319,6 @@ export class WeatherService {
         : '초단기예보·단기예보 API 활용신청이 필요합니다. API허브에서 동네예보 서비스의 예보 API를 추가 신청해 주세요.',
     };
 
-    this.setCachedWeather(nx, ny, summary);
     return summary;
   }
 
@@ -401,7 +455,23 @@ export class WeatherService {
     });
 
     const url = `${KMA_BASE}/${endpoint}?authKey=${serviceKey}&${query.toString()}`;
-    const res = await fetch(url);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.kmaFetchTimeoutMs);
+
+    let res: Response;
+    try {
+      res = await fetch(url, { signal: controller.signal });
+    } catch (err) {
+      const aborted = err instanceof Error && err.name === 'AbortError';
+      throw new ServiceUnavailableException(
+        aborted
+          ? `기상청 API 응답 시간 초과 (${endpoint}, ${this.kmaFetchTimeoutMs}ms)`
+          : `기상청 API 연결 실패 (${endpoint})`,
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
