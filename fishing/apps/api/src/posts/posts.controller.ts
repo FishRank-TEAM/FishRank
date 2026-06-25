@@ -1,9 +1,6 @@
 import {
-
   Controller, Get, Post, Patch, Delete,
-
-  Param, Body, Query, UseGuards, HttpCode, UseInterceptors, UploadedFile,
-
+  Param, Body, Query, UseGuards, HttpCode, UseInterceptors, UploadedFile, Header,
 } from '@nestjs/common';
 
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
@@ -16,6 +13,7 @@ import { PostsService } from './posts.service';
 
 import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload/upload.config';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { parseTagsInput } from './post-tags.util';
 
 
 
@@ -47,7 +45,7 @@ export class PostsController {
 
     @UploadedFile() file: Express.Multer.File,
 
-    @Body() body: { title: string; content: string; catchId?: string },
+    @Body() body: { title: string; content: string; catchId?: string; tags?: string },
 
   ) {
 
@@ -61,6 +59,8 @@ export class PostsController {
 
       imageUrl: saveUploadedFile(file),
 
+      tags: parseTagsInput(body.tags),
+
     });
 
     return { success: true, data: result };
@@ -70,12 +70,18 @@ export class PostsController {
 
 
   @Get()
-
+  @Header('Cache-Control', 'public, max-age=30')
   @ApiOperation({ summary: '커뮤니티 글 목록' })
 
-  async findAll(@Query('page') page = 1, @Query('limit') limit = 20) {
+  async findAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @Query('sort') sort: 'latest' | 'popular' = 'latest',
+    @Query('tag') tag?: string,
+    @Query('q') q?: string,
+  ) {
 
-    const result = await this.postsService.findAll(Number(page), Number(limit));
+    const result = await this.postsService.findAll(Number(page), Number(limit), sort, tag, q);
 
     return { success: true, data: result };
 
@@ -162,6 +168,8 @@ export class PostsController {
       catchId: body.catchId,
 
       imageUrl,
+
+      tags: body.tags !== undefined ? parseTagsInput(body.tags) : undefined,
 
     });
 
