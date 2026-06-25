@@ -96,7 +96,7 @@ export default function WeatherCharts({ day, selectedHour, onHourChange }: Props
                 activeDot={{ r: 5, fill: '#f9a825' }}
                 connectNulls
               />
-              <ReferenceLine x={selectedHour} stroke="#1565c0" strokeWidth={2} />
+              <ReferenceLine x={selectedHour} stroke="#0A2540" strokeWidth={2} />
             </ComposedChart>
           )}
 
@@ -116,7 +116,7 @@ export default function WeatherCharts({ day, selectedHour, onHourChange }: Props
                   if (payload) handlePointClick(payload);
                 }}
               />
-              <ReferenceLine x={selectedHour} stroke="#1565c0" strokeWidth={2} />
+              <ReferenceLine x={selectedHour} stroke="#0A2540" strokeWidth={2} />
             </ComposedChart>
           )}
 
@@ -137,7 +137,7 @@ export default function WeatherCharts({ day, selectedHour, onHourChange }: Props
                   if (payload) handlePointClick(payload);
                 }}
               />
-              <ReferenceLine x={selectedHour} stroke="#1565c0" strokeWidth={2} />
+              <ReferenceLine x={selectedHour} stroke="#0A2540" strokeWidth={2} />
             </ComposedChart>
           )}
 
@@ -160,7 +160,7 @@ export default function WeatherCharts({ day, selectedHour, onHourChange }: Props
                   <Cell key={entry.hour} fill={entry.fishColor} fillOpacity={entry.isEstimated ? 0.45 : 0.95} />
                 ))}
               </Bar>
-              <ReferenceLine x={selectedHour} stroke="#1565c0" strokeWidth={2} />
+              <ReferenceLine x={selectedHour} stroke="#0A2540" strokeWidth={2} />
             </ComposedChart>
           )}
         </ResponsiveContainer>
