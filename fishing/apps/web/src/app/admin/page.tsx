@@ -17,7 +17,8 @@ export default function AdminDashboardPage() {
 
   const cards = [
     { label: '신고 검토', value: data?.flaggedReports ?? 0, href: '/admin/reports', accent: '#c62828' },
-    { label: '진행 대회', value: data?.activeTournaments ?? 0, href: '/admin/tournaments', accent: '#1565c0' },
+    { label: '미처리 피드백', value: data?.openFeedbacks ?? 0, href: '/admin/feedbacks', accent: '#00838f' },
+    { label: '진행 대회', value: data?.activeTournaments ?? 0, href: '/admin/tournaments', accent: '#0A2540' },
     { label: '전체 기록', value: data?.totalCatches ?? 0, href: '/admin/catches', accent: '#2e7d32' },
     { label: '게시글', value: data?.totalPosts ?? 0, href: '/admin/posts', accent: '#5c6bc0' },
     { label: '공지·이벤트', value: data?.publishedAnnouncements ?? 0, href: '/admin/announcements', accent: '#6a1b9a' },
@@ -89,6 +90,28 @@ export default function AdminDashboardPage() {
           )}
         </section>
       </div>
+
+      <section className="admin-panel">
+        <div className="admin-panel-head">
+          <h2>최근 피드백</h2>
+          <Link href="/admin/feedbacks" className="admin-link">전체 보기</Link>
+        </div>
+        {!data?.recentFeedbacks?.length ? (
+          <p className="admin-muted">미처리 피드백이 없습니다.</p>
+        ) : (
+          <ul className="admin-list">
+            {data.recentFeedbacks.map((item: any) => (
+              <li key={item.id} className="admin-list-item">
+                <div>
+                  <strong>{item.user?.nickname}</strong>
+                  <span className="admin-muted"> · {item.content.slice(0, 60)}{item.content.length > 60 ? '…' : ''}</span>
+                </div>
+                <span className="admin-muted">{formatTimeAgo(item.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
