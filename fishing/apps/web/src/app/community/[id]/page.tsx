@@ -12,6 +12,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import PageBackLink from '@/components/layout/PageBackLink';
 import CatchPreviewCard from '@/components/community/CatchPreviewCard';
 import ReportButton from '@/components/report/ReportButton';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 export default function PostDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -79,7 +80,11 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
                 href={`/profile/${encodeURIComponent(data.user.nickname)}`}
                 className="post-author-link community-post-author"
               >
-                <span className="community-post-avatar">{data.user.nickname[0]}</span>
+                <UserAvatar
+                  nickname={data.user.nickname}
+                  profileImage={data.user.profileImage}
+                  className="community-post-avatar"
+                />
                 <span className="post-author-name">{data.user.nickname}</span>
               </Link>
               <span className="post-meta-muted">{formatTimeAgo(data.createdAt)}</span>
@@ -137,12 +142,16 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
             id: string;
             content: string;
             createdAt: string;
-            user: { nickname: string };
+            user: { nickname: string; profileImage?: string | null };
           }) => (
             <div key={c.id} className="comment-item">
               <div className="comment-row">
                 <Link href={`/profile/${encodeURIComponent(c.user.nickname)}`}>
-                  <span className="community-post-avatar">{c.user.nickname[0]}</span>
+                  <UserAvatar
+                    nickname={c.user.nickname}
+                    profileImage={c.user.profileImage}
+                    className="community-post-avatar"
+                  />
                 </Link>
                 <div className="comment-body">
                   <div className="post-meta-left" style={{ marginBottom: 4 }}>
