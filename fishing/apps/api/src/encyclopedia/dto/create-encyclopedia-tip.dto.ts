@@ -1,6 +1,11 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { FISH_CATEGORY_VALUES } from '../fish-category.util';
 
 export class CreateEncyclopediaTipDto {
+  @IsOptional()
+  @IsIn([...FISH_CATEGORY_VALUES])
+  category?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(120)
