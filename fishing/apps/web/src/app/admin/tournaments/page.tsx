@@ -47,6 +47,15 @@ export default function AdminTournamentsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-tournaments'] }),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/tournaments/${id}`),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tournaments'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      if (editId === id) resetForm();
+    },
+  });
+
   const resetForm = () => {
     setForm({ ...EMPTY_FORM });
     setEditId(null);
@@ -94,7 +103,7 @@ export default function AdminTournamentsPage() {
     <div className="admin-page">
       <header className="admin-page-head">
         <h1>대회 관리</h1>
-        <p>대회를 생성·수정하고 진행 상태를 변경합니다.</p>
+        <p>대회를 생성·수정·삭제하고 진행 상태를 변경합니다.</p>
       </header>
 
       <div className="admin-tournament-grid">
@@ -122,6 +131,21 @@ export default function AdminTournamentsPage() {
                     {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                   </select>
                   <button type="button" className="admin-btn-ghost" onClick={() => startEdit(t)}>수정</button>
+                  <button
+                    type="button"
+                    className="admin-btn-danger"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => {
+                      const entryCount = t._count?.entries ?? 0;
+                      const msg = entryCount > 0
+                        ? `"${t.title}" 대회를 삭제할까요?\n참가자 ${entryCount}명의 기록도 함께 삭제됩니다.`
+                        : `"${t.title}" 대회를 삭제할까요?`;
+                      if (!window.confirm(msg)) return;
+                      deleteMutation.mutate(t.id);
+                    }}
+                  >
+                    삭제
+                  </button>
                 </div>
               </div>
             ))
