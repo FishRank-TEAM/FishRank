@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { getImageUrl } from '@/lib/images';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 type Props = {
   nickname: string;
@@ -10,8 +10,6 @@ type Props = {
 };
 
 export default function RankingUserAvatar({ nickname, profileImage, size = 36 }: Props) {
-  const src = profileImage ? getImageUrl(profileImage) : null;
-
   return (
     <Link
       href={`/profile/${encodeURIComponent(nickname)}`}
@@ -19,11 +17,11 @@ export default function RankingUserAvatar({ nickname, profileImage, size = 36 }:
       style={{ width: size, height: size }}
       aria-label={`${nickname} 프로필`}
     >
-      {src ? (
-        <img src={src} alt="" loading="lazy" />
-      ) : (
-        <span aria-hidden>{nickname[0]?.toUpperCase() ?? '?'}</span>
-      )}
+      <UserAvatar
+        nickname={nickname}
+        profileImage={profileImage}
+        className="user-avatar-fill"
+      />
     </Link>
   );
 }
