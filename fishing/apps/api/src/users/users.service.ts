@@ -139,6 +139,22 @@ export class UsersService {
     });
   }
 
+  async updateProfileImage(userId: string, profileImage: string | null) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImage },
+      select: {
+        id: true,
+        email: true,
+        nickname: true,
+        profileImage: true,
+        bio: true,
+        activityRegion: true,
+        fishingCategory: true,
+      },
+    });
+  }
+
   private readonly MAX_GEARS = 6;
 
   async getUserGears(userId: string) {
