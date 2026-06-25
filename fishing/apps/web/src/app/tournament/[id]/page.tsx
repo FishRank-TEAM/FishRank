@@ -6,6 +6,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { getImageUrl } from '@/lib/images';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 const STATUS_MAP: Record<string, string> = {
   upcoming: '예정', active: '진행중', closed: '마감', finished: '종료',
@@ -131,7 +132,7 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {rankingData.slice(0, 10).map((entry: {
                   id: string;
-                  user: { nickname: string };
+                  user: { nickname: string; profileImage?: string | null };
                   bestLengthCm?: number;
                 }, i: number) => (
                   <div
@@ -139,6 +140,11 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
                     className={`tournament-rank-row${i < 3 ? ' top3' : ''}${i === 0 ? ' rank1' : ''}`}
                   >
                     <span className="tournament-rank-medal">{getRankMedal(i + 1)}</span>
+                    <UserAvatar
+                      nickname={entry.user.nickname}
+                      profileImage={entry.user.profileImage}
+                      className="tournament-rank-avatar"
+                    />
                     <Link href={`/profile/${encodeURIComponent(entry.user.nickname)}`} className="tournament-rank-name">
                       {entry.user.nickname}
                     </Link>
