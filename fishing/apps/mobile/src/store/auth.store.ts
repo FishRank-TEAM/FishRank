@@ -7,6 +7,7 @@ type User = {
   email: string;
   nickname: string;
   role?: string;
+  profileImage?: string | null;
 };
 
 type AuthState = {
@@ -52,6 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           email: me.data.data.email,
           nickname: me.data.data.nickname,
           role: me.data.data.role,
+          profileImage: me.data.data.profileImage,
         },
       });
     } catch {
