@@ -8,8 +8,10 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
+  const isDev = process.env.NODE_ENV !== 'production';
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: isDev ? true : process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
   });
 
@@ -30,8 +32,12 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 4000;
-  await app.listen(port);
+  const host = process.env.HOST || '0.0.0.0';
+  await app.listen(port, host);
   console.log(`🎣 FishRank API 서버 실행 중: http://localhost:${port}`);
+  if (host === '0.0.0.0') {
+    console.log(`📱 LAN(모바일) 접속: http://<PC_IP>:${port}/api/v1`);
+  }
   console.log(`📋 Swagger 문서: http://localhost:${port}/api/docs`);
 }
 bootstrap();
