@@ -6,11 +6,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { getImageUrl } from '@/lib/images';
-import PageHeader from '@/components/layout/PageHeader';
 import PageBackLink from '@/components/layout/PageBackLink';
 import { useAuthStore } from '@/store/auth.store';
 import EncyclopediaEditLogModal from '@/components/encyclopedia/EncyclopediaEditLogModal';
 import EncyclopediaEditLogTrigger from '@/components/encyclopedia/EncyclopediaEditLogTrigger';
+import {
+  FISH_CATEGORY_OPTIONS,
+  getFishCategoryEmoji,
+  getFishCategoryHeroClass,
+  getFishCategoryLabel,
+  type FishSpeciesCategory,
+} from '@fishrank/shared';
 
 type CommunityTip = {
   id: string;
@@ -100,6 +106,7 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
   const [bait, setBait] = useState('');
   const [technique, setTechnique] = useState('');
   const [habitat, setHabitat] = useState('');
+  const [category, setCategory] = useState<FishSpeciesCategory>('freshwater');
   const [summary, setSummary] = useState('');
   const [note, setNote] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -123,6 +130,7 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
     setBait(data.bait ?? '');
     setTechnique(data.technique ?? '');
     setHabitat(data.habitat ?? '');
+    setCategory(getFishCategoryHeroClass(data.category));
     setSummary(data.summary ?? '');
     setNote('');
     setImageFile(null);
@@ -148,6 +156,7 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
       formData.append('bait', bait.trim());
       formData.append('technique', technique.trim());
       formData.append('habitat', habitat.trim());
+      formData.append('category', category);
       formData.append('summary', summary.trim());
       if (note.trim()) formData.append('note', note.trim());
       if (imageFile) formData.append('image', imageFile);
@@ -178,7 +187,7 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
     );
   }
 
-  const heroClass = data.category === 'saltwater' ? 'saltwater' : 'freshwater';
+  const heroClass = getFishCategoryHeroClass(data.category);
   const heroImage = getImageUrl(data.imageUrl);
   const hasDetailFields =
     PRACTICAL_FIELDS.some((f) => data[f.key]) || !!data.distribution || !!data.avgLengthCm;
@@ -216,10 +225,12 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
     </button>
   ) : null;
 
+  const hasCommunityInfo = Object.entries(data.filledByCommunity).some(
+    ([key, filled]) => filled && key !== 'imageUrl',
+  );
+
   return (
     <main>
-      <PageHeader title={data.nameKo} description={data.category === 'saltwater' ? '바다낚시' : '민물낚시'} />
-
       <div className="site-container site-page-body page-narrow">
         <PageBackLink href="/encyclopedia" label="어종 목록" />
 
@@ -228,7 +239,7 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
             <img src={heroImage} alt={data.nameKo} className="encyclopedia-detail-cover-img" />
           ) : (
             <div className="encyclopedia-detail-cover-placeholder">
-              {data.category === 'saltwater' ? '🐠' : '🐟'}
+              {getFishCategoryEmoji(data.category)}
             </div>
           )}
           <div className="encyclopedia-detail-cover-overlay">
@@ -236,28 +247,22 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
             {data.scientificName && (
               <p className="encyclopedia-detail-cover-sci">{data.scientificName}</p>
             )}
-            {data.filledByCommunity.imageUrl && <CommunityBadge />}
+            <div className="encyclopedia-detail-cover-badges">
+              <span className={`encyclopedia-cover-badge encyclopedia-cover-badge--${heroClass}`}>
+                {getFishCategoryLabel(data.category)}
+              </span>
+              {data.filledByCommunity.imageUrl && <CommunityBadge />}
+            </div>
           </div>
         </div>
 
-        {needsAnyFill && (
+        {needsAnyFill && !showForm && (
           <div className="encyclopedia-needs-fill-banner">
             <span className="encyclopedia-needs-fill-icon">✏️</span>
             <div className="encyclopedia-needs-fill-body">
-              <div className="encyclopedia-needs-fill-head">
-                <div className="encyclopedia-needs-fill-title">기본 정보가 아직 부족해요</div>
-                {!showForm && (
-                  <div className="encyclopedia-section-actions">
-                    <EncyclopediaEditLogTrigger
-                      count={editLogCount}
-                      onClick={() => setShowEditLogs(true)}
-                    />
-                    {editFormButton}
-                  </div>
-                )}
-              </div>
+              <p className="encyclopedia-needs-fill-title">기본 정보가 아직 부족해요</p>
               <p className="encyclopedia-needs-fill-desc">
-                {missingLabels.join(' · ')}을(를) 알고 계시면 채워 주세요.
+                {missingLabels.join(' · ')}을(를) 알고 계시면 아래에서 채워 주세요.
               </p>
             </div>
           </div>
@@ -279,18 +284,22 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
 
         <section className="encyclopedia-practical-section">
           <div className="encyclopedia-section-head">
-            <h2 className="encyclopedia-section-title">기본 정보</h2>
-            <div className="encyclopedia-section-actions">
-              <EncyclopediaEditLogTrigger
-                count={editLogCount}
-                onClick={() => setShowEditLogs(true)}
-              />
-              {editFormButton}
-            </div>
+            <h2 className="encyclopedia-section-title">
+              기본 정보
+              {hasCommunityInfo && <CommunityBadge />}
+            </h2>
+            {!showForm && (
+              <div className="encyclopedia-section-actions">
+                <EncyclopediaEditLogTrigger
+                  count={editLogCount}
+                  onClick={() => setShowEditLogs(true)}
+                />
+                {editFormButton}
+              </div>
+            )}
           </div>
           {data.summary && (
             <div className="encyclopedia-practical-summary-wrap">
-              {data.filledByCommunity.summary && <CommunityBadge />}
               <p className="encyclopedia-practical-summary">{data.summary}</p>
             </div>
           )}
@@ -301,10 +310,7 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
                   <div key={field.key} className="encyclopedia-practical-item">
                     <span className="encyclopedia-practical-icon">{field.icon}</span>
                     <div>
-                      <div className="encyclopedia-practical-label">
-                        {field.label}
-                        {data.filledByCommunity[field.key] && <CommunityBadge />}
-                      </div>
+                      <div className="encyclopedia-practical-label">{field.label}</div>
                       <div className="encyclopedia-practical-value">{data[field.key]}</div>
                     </div>
                   </div>
@@ -351,6 +357,23 @@ export default function EncyclopediaDetailPage({ params }: { params: Promise<{ i
               <p className="encyclopedia-tip-form-hint post-meta-muted">
                 현재 표시 중인 정보가 폼에 채워져 있어요. 바꿀 항목만 고치고 저장하면 됩니다.
               </p>
+              <label className="encyclopedia-tip-category-field">
+                <span className="encyclopedia-tip-category-label">분류</span>
+                <div className="encyclopedia-tip-category-options">
+                  {FISH_CATEGORY_OPTIONS.map((option) => (
+                    <label key={option.value} className="encyclopedia-tip-category-option">
+                      <input
+                        type="radio"
+                        name="fish-category"
+                        value={option.value}
+                        checked={category === option.value}
+                        onChange={() => setCategory(option.value)}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </label>
               <label className="encyclopedia-tip-image-field">
                 <span className="encyclopedia-tip-image-label">대표 사진</span>
                 <input
