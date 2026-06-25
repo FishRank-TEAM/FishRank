@@ -4,6 +4,7 @@ import HomeHeroText from '@/components/home/HomeHeroText';
 import HomeStatsBar from '@/components/home/HomeStatsBar';
 import HomeWeeklyRanking from '@/components/home/HomeWeeklyRanking';
 import HomeSidebar from '@/components/home/HomeSidebar';
+import HomeFeedbackSection from '@/components/home/HomeFeedbackSection';
 import { fetchHomeData } from '@/lib/server-api';
 
 export default async function HomePage() {
@@ -35,6 +36,8 @@ export default async function HomePage() {
         <HomeWeeklyRanking rankings={rankings} />
         <HomeSidebar tournaments={tournaments} posts={posts} announcements={announcements} />
       </div>
+
+      <HomeFeedbackSection />
     </main>
   );
 }
