@@ -17,6 +17,8 @@ import { WeatherModule } from './weather/weather.module';
 import { AdminModule } from './admin/admin.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { ReportsModule } from './reports/reports.module';
+import { FeedbacksModule } from './feedbacks/feedbacks.module';
+import { HomeModule } from './home/home.module';
 
 @Module({
   controllers: [AppController],
@@ -40,6 +42,8 @@ import { ReportsModule } from './reports/reports.module';
     AdminModule,
     AnnouncementsModule,
     ReportsModule,
+    FeedbacksModule,
+    HomeModule,
   ],
 })
 export class AppModule {}
