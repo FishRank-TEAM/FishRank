@@ -10,6 +10,7 @@ import { getImageUrl } from '@/lib/images';
 import { useAuthStore } from '@/store/auth.store';
 import ProfileHeader, { ProfileStatsBar } from '@/components/layout/ProfileHeader';
 import ProfileBioGearSection from '@/components/profile/ProfileBioGearSection';
+import ProfileAvatarEditor from '@/components/profile/ProfileAvatarEditor';
 import SiteErrorState from '@/components/layout/SiteErrorState';
 import SiteLoadingState from '@/components/layout/SiteLoadingState';
 import BragDetailModal from '@/components/ranking/BragDetailModal';
@@ -93,22 +94,32 @@ export default function ProfilePage({ params }: { params: Promise<{ nickname: st
 
   return (
     <main>
-      <ProfileHeader
-        nickname={user.nickname}
-        subtitle={`${new Date(user.createdAt).toLocaleDateString('ko-KR')} 가입`}
-        badges={
-          (user.activityRegion || user.fishingCategory) ? (
-            <>
-              {user.activityRegion && (
-                <span className="profile-badge">📍 {formatActivityRegionLabel(user.activityRegion)}</span>
-              )}
-              {user.fishingCategory && (
-                <span className="profile-badge">{formatFishingCategory(user.fishingCategory)}</span>
-              )}
-            </>
-          ) : undefined
-        }
-      />
+      <div className="site-container profile-page-body" style={{ paddingTop: 32, paddingBottom: 0 }}>
+        <ProfileHeader
+          nickname={user.nickname}
+          subtitle={`${new Date(user.createdAt).toLocaleDateString('ko-KR')} 가입`}
+          avatar={
+            <ProfileAvatarEditor
+              nickname={user.nickname}
+              profileImage={user.profileImage}
+              editable={isOwnProfile}
+              showDelete={isOwnProfile}
+            />
+          }
+          badges={
+            (user.activityRegion || user.fishingCategory) ? (
+              <>
+                {user.activityRegion && (
+                  <span className="profile-badge">📍 {formatActivityRegionLabel(user.activityRegion)}</span>
+                )}
+                {user.fishingCategory && (
+                  <span className="profile-badge">{formatFishingCategory(user.fishingCategory)}</span>
+                )}
+              </>
+            ) : undefined
+          }
+        />
+      </div>
 
       <ProfileStatsBar
         items={[
