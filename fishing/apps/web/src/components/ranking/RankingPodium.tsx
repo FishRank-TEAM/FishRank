@@ -7,6 +7,7 @@ import type { RankingItem } from '@/components/RankingCard';
 import type { RankingTypeKey } from '@/lib/ranking.constants';
 import CatchThumbnail from '@/components/ranking/CatchThumbnail';
 import BragDetailModal from '@/components/ranking/BragDetailModal';
+import GradeBadge from '@/components/ranking/GradeBadge';
 
 const PODIUM_ORDER = [2, 1, 3] as const;
 
@@ -131,7 +132,7 @@ export default function RankingPodium({ items, rankingType }: Props) {
                   ) : (
                     <>
                       <span className="ranking-podium-stat-main">{formatLength(item.lengthCm)}</span>
-                      {item.grade && <span className="ranking-podium-grade">{item.grade}</span>}
+                      <GradeBadge grade={item.grade} className="ranking-podium-grade" />
                     </>
                   )}
                 </div>
