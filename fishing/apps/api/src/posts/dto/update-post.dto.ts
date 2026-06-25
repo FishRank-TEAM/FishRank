@@ -15,4 +15,8 @@ export class UpdatePostDto {
   @IsOptional()
   @IsString()
   removeImage?: string;
+
+  @IsOptional()
+  @IsString()
+  tags?: string;
 }
