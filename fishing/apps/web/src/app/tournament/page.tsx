@@ -11,7 +11,7 @@ import SiteErrorState from '@/components/layout/SiteErrorState';
 import SiteLoadingState from '@/components/layout/SiteLoadingState';
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  upcoming: { label: '예정', color: '#1565c0', bg: '#e3f2fd' },
+  upcoming: { label: '예정', color: '#0A2540', bg: '#e8eef3' },
   active:   { label: '진행중', color: '#2e7d32', bg: '#e8f5e9' },
   closed:   { label: '마감', color: '#546e7a', bg: '#f0f4f8' },
   finished: { label: '종료', color: '#90a4ae', bg: '#f5f7fa' },
