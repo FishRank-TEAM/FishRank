@@ -1,8 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { getCatalogEntry, type FishCatalogEntry } from '../fish-info/fish-species-catalog';
 import { FishNewsClient } from './fish-news.client';
 import type { CreateEncyclopediaTipDto } from './dto/create-encyclopedia-tip.dto';
+import type { CreateFishSpeciesDto } from './dto/create-fish-species.dto';
 import {
   buildEncyclopediaChanges,
   type EncyclopediaEditField,
@@ -15,6 +16,7 @@ import {
   type EncyclopediaSort,
   type EncyclopediaTechnique,
 } from './encyclopedia-filter.util';
+import { buildSpeciesCategoryFilter, formatFishCategoryLabel } from './fish-category.util';
 
 const DATA_SOURCE = '해양수산부 해양생물종기본정보 · 공공데이터포털';
 
@@ -38,7 +40,8 @@ export class EncyclopediaService {
     const skip = (pageNum - 1) * take;
 
     const speciesAnd: Record<string, unknown>[] = [];
-    if (category && category !== 'all') speciesAnd.push({ category });
+    const categoryFilter = buildSpeciesCategoryFilter(category);
+    if (categoryFilter) speciesAnd.push(categoryFilter);
     if (search?.trim()) {
       speciesAnd.push({
         OR: [
@@ -97,12 +100,101 @@ export class EncyclopediaService {
   }
 
   async getStats() {
-    const [total, freshwater, saltwater] = await Promise.all([
+    const [total, freshwater, saltwater, both] = await Promise.all([
       this.prisma.fishEncyclopedia.count(),
       this.prisma.fishEncyclopedia.count({ where: { fishSpecies: { category: 'freshwater' } } }),
       this.prisma.fishEncyclopedia.count({ where: { fishSpecies: { category: 'saltwater' } } }),
+      this.prisma.fishEncyclopedia.count({ where: { fishSpecies: { category: 'both' } } }),
     ]);
-    return { total, freshwater, saltwater };
+    return { total, freshwater, saltwater, both };
+  }
+
+  async createSpecies(userId: string, dto: CreateFishSpeciesDto, imageUrl?: string | null) {
+    const nameKo = dto.nameKo.trim();
+    const scientificName = dto.scientificName?.trim() || null;
+
+    const duplicateName = await this.prisma.fishSpecies.findFirst({
+      where: { nameKo: { equals: nameKo, mode: 'insensitive' } },
+      select: { id: true, nameKo: true },
+    });
+    if (duplicateName) {
+      throw new ConflictException(`"${duplicateName.nameKo}"은(는) 이미 사전에 등록된 어종입니다.`);
+    }
+
+    if (scientificName) {
+      const duplicateSci = await this.prisma.fishSpecies.findUnique({
+        where: { scientificName },
+        select: { id: true, nameKo: true },
+      });
+      if (duplicateSci) {
+        throw new ConflictException(`학명이 "${duplicateSci.nameKo}"과(와) 중복됩니다.`);
+      }
+    }
+
+    const summary = dto.summary?.trim() || `${nameKo} — FishRank 낚시인 사전에 등록된 어종입니다.`;
+    const season = dto.season?.trim() || null;
+    const bait = dto.bait?.trim() || null;
+    const technique = dto.technique?.trim() || null;
+    const habitat = dto.habitat?.trim() || null;
+
+    const species = await this.prisma.fishSpecies.create({
+      data: {
+        nameKo,
+        nameEn: dto.nameEn?.trim() || null,
+        scientificName,
+        category: dto.category,
+        imageUrl: imageUrl ?? null,
+      },
+    });
+
+    await this.prisma.fishEncyclopedia.create({
+      data: {
+        fishSpeciesId: species.id,
+        description: summary,
+        season,
+        bait,
+        technique,
+        habitat,
+        imageUrl: imageUrl ?? null,
+      },
+    });
+
+    await this.prisma.fishEncyclopediaEditLog.create({
+      data: {
+        fishSpeciesId: species.id,
+        userId,
+        changes: [
+          {
+            field: 'species',
+            label: '어종 등록',
+            oldValue: null,
+            newValue: nameKo,
+          },
+        ],
+      },
+    });
+
+    if (dto.note?.trim() || imageUrl) {
+      await this.prisma.fishEncyclopediaTip.create({
+        data: {
+          fishSpeciesId: species.id,
+          userId,
+          season,
+          bait,
+          technique,
+          habitat,
+          summary,
+          note: dto.note?.trim() || null,
+          imageUrl: imageUrl ?? null,
+        },
+      });
+    }
+
+    return {
+      speciesId: species.id,
+      nameKo: species.nameKo,
+      category: species.category,
+    };
   }
 
   /** DB·카탈로그만 사용 — 외부 API 호출 없음 (빠른 응답) */
@@ -319,6 +411,17 @@ export class EncyclopediaService {
     };
 
     const changes = buildEncyclopediaChanges(beforeValues, afterValues);
+
+    const nextCategory = dto.category?.trim() || species.category;
+    if (dto.category?.trim() && dto.category.trim() !== species.category) {
+      changes.push({
+        field: 'category',
+        label: '분류',
+        oldValue: formatFishCategoryLabel(species.category),
+        newValue: formatFishCategoryLabel(nextCategory),
+      });
+    }
+
     if (changes.length === 0) {
       throw new BadRequestException('변경된 내용이 없습니다.');
     }
@@ -345,6 +448,13 @@ export class EncyclopediaService {
         changes,
       },
     });
+
+    if (nextCategory !== species.category) {
+      await this.prisma.fishSpecies.update({
+        where: { id: speciesId },
+        data: { category: nextCategory },
+      });
+    }
 
     if (afterValues.imageUrl && afterValues.imageUrl !== beforeValues.imageUrl) {
       await this.maybePromoteSpeciesImage(speciesId, afterValues.imageUrl);
@@ -496,7 +606,14 @@ export class EncyclopediaService {
       }
     }
 
-    const label = category === 'freshwater' ? '민물' : '바다';
+    const label =
+      category === 'freshwater'
+        ? '민물'
+        : category === 'saltwater'
+          ? '바다'
+          : category === 'both'
+            ? '민물·바다'
+            : '민물';
     return `${nameKo}${this.subjectParticle(nameKo)} ${label}에서 만날 수 있는 어종이에요.`;
   }
 
