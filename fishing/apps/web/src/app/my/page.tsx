@@ -13,9 +13,11 @@ import { IS_BRAG_UPLOAD_ENABLED, IS_CERTIFIED_UPLOAD_ENABLED } from '@/lib/platf
 import { getImageUrl } from '@/lib/images';
 import ProfileHeader, { ProfileStatsBar } from '@/components/layout/ProfileHeader';
 import ProfileGearEditor from '@/components/profile/ProfileGearEditor';
+import ProfileAvatarEditor from '@/components/profile/ProfileAvatarEditor';
 import SiteEmptyState from '@/components/layout/SiteEmptyState';
 import SiteLoadingState from '@/components/layout/SiteLoadingState';
 import BragDetailModal from '@/components/ranking/BragDetailModal';
+import CatchRecordDetailModal from '@/components/catch/CatchRecordDetailModal';
 import type { RankingItem } from '@/components/RankingCard';
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -34,6 +36,7 @@ export default function MyPage() {
   const queryClient = useQueryClient();
   const { isLoggedIn, authReady, user } = useAuthStore();
   const [bragDetail, setBragDetail] = useState<RankingItem | null>(null);
+  const [certifiedDetailId, setCertifiedDetailId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('catches');
   const [catchRecordTab, setCatchRecordTab] = useState<CatchRecordTab>('certified');
   const [activityProvince, setActivityProvince] = useState('');
@@ -123,6 +126,22 @@ export default function MyPage() {
 
   if (!authReady || !isLoggedIn) return null;
 
+  const openCatchRecord = (item: {
+    id: string;
+    recordType: string;
+    imageUrl?: string;
+    locationName?: string | null;
+    createdAt: string;
+    memo?: string | null;
+    fishSpecies?: { id?: number; nameKo: string } | null;
+  }) => {
+    if (item.recordType === 'personal') {
+      openBragDetail(item);
+      return;
+    }
+    setCertifiedDetailId(item.id);
+  };
+
   const openBragDetail = (item: {
     id: string;
     imageUrl?: string;
@@ -161,17 +180,27 @@ export default function MyPage() {
 
   return (
     <main>
-      <ProfileHeader
-        nickname={user?.nickname ?? '?'}
-        subtitle={user?.email}
-        actions={
-          user?.nickname ? (
-            <Link href={`/profile/${encodeURIComponent(user.nickname)}`} className="profile-header-action">
-              공개 프로필 보기
-            </Link>
-          ) : undefined
-        }
-      />
+      <div className="site-container profile-page-body" style={{ paddingTop: 32, paddingBottom: 0 }}>
+        <ProfileHeader
+          nickname={user?.nickname ?? '?'}
+          subtitle={user?.email}
+          avatar={
+            <ProfileAvatarEditor
+              nickname={user?.nickname ?? '?'}
+              profileImage={meData?.profileImage ?? user?.profileImage}
+              editable
+              showDelete
+            />
+          }
+          actions={
+            user?.nickname ? (
+              <Link href={`/profile/${encodeURIComponent(user.nickname)}`} className="profile-header-action">
+                공개 프로필 보기
+              </Link>
+            ) : undefined
+          }
+        />
+      </div>
 
       {stats && (
         <ProfileStatsBar
@@ -389,16 +418,16 @@ export default function MyPage() {
                   return (
                     <div
                       key={item.id}
-                      role={isPersonal ? 'button' : undefined}
-                      tabIndex={isPersonal ? 0 : undefined}
-                      onClick={() => { if (isPersonal) openBragDetail(item); }}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openCatchRecord(item)}
                       onKeyDown={(event) => {
-                        if (isPersonal && (event.key === 'Enter' || event.key === ' ')) {
+                        if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
-                          openBragDetail(item);
+                          openCatchRecord(item);
                         }
                       }}
-                      className={`catch-record-row${isFeatured ? ' featured' : ''}${isPersonal ? ' clickable' : ''}`}
+                      className={`catch-record-row clickable${isFeatured ? ' featured' : ''}`}
                     >
                       <div className="catch-record-thumb">
                         {item.imageUrl ? (
@@ -540,6 +569,13 @@ export default function MyPage() {
           </>
         )}
       </div>
+
+      {certifiedDetailId ? (
+        <CatchRecordDetailModal
+          catchId={certifiedDetailId}
+          onClose={() => setCertifiedDetailId(null)}
+        />
+      ) : null}
 
       {bragDetail && (
         <BragDetailModal
