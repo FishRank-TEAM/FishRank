@@ -31,6 +31,7 @@ function matchSpecies(species: FishSpeciesOption, query: string) {
 
 function categoryLabel(category?: string) {
   if (category === 'saltwater') return '바다';
+  if (category === 'both') return '민·바다';
   if (category === 'freshwater') return '민물';
   return null;
 }
