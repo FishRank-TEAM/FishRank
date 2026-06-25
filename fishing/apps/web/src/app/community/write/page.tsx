@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { COMMUNITY_TAGS, type CommunityTagKey } from '@fishrank/shared';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import PageHeader from '@/components/layout/PageHeader';
@@ -16,6 +17,7 @@ export default function WritePage() {
   const [selectedCatchId, setSelectedCatchId] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [tags, setTags] = useState<CommunityTagKey[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -41,6 +43,18 @@ export default function WritePage() {
     setImagePreview(URL.createObjectURL(file));
   };
 
+  const toggleTag = (key: CommunityTagKey) => {
+    setTags((prev) => {
+      if (prev.includes(key)) return prev.filter((t) => t !== key);
+      if (prev.length >= 3) {
+        setError('태그는 최대 3개까지 선택할 수 있습니다.');
+        return prev;
+      }
+      setError('');
+      return [...prev, key];
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return setError('제목을 입력해주세요.');
@@ -54,6 +68,7 @@ export default function WritePage() {
       formData.append('content', content);
       if (selectedCatchId) formData.append('catchId', selectedCatchId);
       if (imageFile) formData.append('image', imageFile);
+      if (tags.length > 0) formData.append('tags', JSON.stringify(tags));
 
       const res = await api.post('/posts', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -97,6 +112,22 @@ export default function WritePage() {
               rows={8}
               className="form-textarea"
             />
+          </div>
+
+          <div className="site-form-field">
+            <label className="site-form-label">태그 (최대 3개)</label>
+            <div className="community-tag-chips community-tag-chips--form">
+              {COMMUNITY_TAGS.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  className={`community-tag-chip${tags.includes(t.key) ? ' active' : ''}`}
+                  onClick={() => toggleTag(t.key)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="site-form-field">
