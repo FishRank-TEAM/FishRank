@@ -1,3 +1,5 @@
+import { HOME_HERO_DESC } from '@/lib/platform';
+
 function getWeekLabel() {
   const now = new Date();
   const start = new Date(now);
@@ -18,10 +20,7 @@ export default function HomeHeroText() {
         <br />
         전국 몇 위?
       </h1>
-      <p className="home-hero-desc">
-        줄자 인증하고 올리면 전국·지역·어종 순위에 바로 반영됩니다.
-        매주 월요일 집계가 새로 시작됩니다.
-      </p>
+      <p className="home-hero-desc">{HOME_HERO_DESC}</p>
     </>
   );
 }
