@@ -1,10 +1,16 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';import { PrismaService } from '../prisma/prisma.service';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { isCommunityTagKey, parseTagsInput, type CommunitySort } from './post-tags.util';
 
 @Injectable()
 export class PostsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(userId: string, dto: { title: string; content: string; catchId?: string; imageUrl?: string | null }) {
+  async create(
+    userId: string,
+    dto: { title: string; content: string; catchId?: string; imageUrl?: string | null; tags?: string[] },
+  ) {
+    const tags = this.normalizeTags(dto.tags);
     return this.prisma.post.create({
       data: {
         userId,
@@ -12,6 +18,7 @@ export class PostsService {
         content: dto.content,
         catchId: dto.catchId || null,
         imageUrl: dto.imageUrl || null,
+        tags,
       },
       include: {
         user: { select: { id: true, nickname: true, profileImage: true } },
@@ -19,22 +26,42 @@ export class PostsService {
     });
   }
 
-  async findAll(page = 1, limit = 20) {
+  async findAll(page = 1, limit = 20, sort: CommunitySort = 'latest', tag?: string, q?: string) {
     const skip = (page - 1) * limit;
+    const term = q?.trim();
+    const where = {
+      deletedAt: null,
+      ...(tag && isCommunityTagKey(tag) ? { tags: { has: tag } } : {}),
+      ...(term
+        ? {
+            OR: [
+              { title: { contains: term, mode: 'insensitive' as const } },
+              { content: { contains: term, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const orderBy =
+      sort === 'popular'
+        ? [{ comments: { _count: 'desc' as const } }, { viewCount: 'desc' as const }, { createdAt: 'desc' as const }]
+        : [{ createdAt: 'desc' as const }];
+
     const [items, total] = await Promise.all([
       this.prisma.post.findMany({
-        where: { deletedAt: null },
+        where,
         include: {
           user: { select: { id: true, nickname: true, profileImage: true } },
+          catch: { select: { recordType: true } },
           _count: { select: { comments: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limit,
       }),
-      this.prisma.post.count({ where: { deletedAt: null } }),
+      this.prisma.post.count({ where }),
     ]);
-    return { items, total, page, limit };
+    return { items, total, page, limit, sort, tag: tag ?? null, q: term ?? null };
   }
 
   async findById(id: string) {
@@ -88,6 +115,7 @@ export class PostsService {
       content: string;
       catchId?: string;
       imageUrl?: string | null;
+      tags?: string[];
     },
   ) {
     const post = await this.prisma.post.findUnique({ where: { id, deletedAt: null } });
@@ -101,6 +129,7 @@ export class PostsService {
         content: dto.content.trim(),
         catchId: dto.catchId === undefined ? post.catchId : dto.catchId || null,
         imageUrl: dto.imageUrl === undefined ? post.imageUrl : dto.imageUrl,
+        ...(dto.tags !== undefined ? { tags: this.normalizeTags(dto.tags) } : {}),
       },
       include: {
         user: { select: { id: true, nickname: true, profileImage: true } },
@@ -123,5 +152,13 @@ export class PostsService {
       this.prisma.post.count({ where: { userId, deletedAt: null } }),
     ]);
     return { items, total, page, limit };
+  }
+
+  private normalizeTags(tags?: string[]): string[] {
+    const normalized = parseTagsInput(tags);
+    if (normalized.length > 3) {
+      throw new BadRequestException('태그는 최대 3개까지 선택할 수 있습니다.');
+    }
+    return normalized;
   }
 }
