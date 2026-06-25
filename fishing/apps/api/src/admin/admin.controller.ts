@@ -6,6 +6,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AdminService } from './admin.service';
 import { ReviewCatchDto } from './dto/review-catch.dto';
 import { UpsertAnnouncementDto } from './dto/upsert-announcement.dto';
+import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 
 @ApiTags('관리자')
 @Controller('admin')
@@ -100,6 +101,27 @@ export class AdminController {
     @Body() body: { action: 'dismiss' | 'delete' },
   ) {
     const data = await this.admin.resolveFlaggedReport(targetType, targetId, body.action);
+    return { success: true, data };
+  }
+
+  @Get('feedbacks')
+  @ApiOperation({ summary: '사용자 피드백 목록' })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async listFeedbacks(
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    const data = await this.admin.listFeedbacks(status, Number(page) || 1, Number(limit) || 20);
+    return { success: true, data };
+  }
+
+  @Patch('feedbacks/:id')
+  @ApiOperation({ summary: '피드백 상태 변경' })
+  async updateFeedback(@Param('id') id: string, @Body() dto: UpdateFeedbackDto) {
+    const data = await this.admin.updateFeedback(id, dto);
     return { success: true, data };
   }
 }
