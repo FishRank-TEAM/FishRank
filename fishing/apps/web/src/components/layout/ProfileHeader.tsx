@@ -10,8 +10,8 @@ type Props = {
 
 export default function ProfileHeader({ nickname, subtitle, badges, avatar, actions }: Props) {
   return (
-    <header className="profile-header">
-      <div className="site-container profile-header-inner">
+    <div className="profile-header">
+      <div className="profile-header-inner">
         <div className="profile-header-main">
           <div className="profile-header-avatar">
             {avatar ?? nickname[0]}
@@ -24,7 +24,7 @@ export default function ProfileHeader({ nickname, subtitle, badges, avatar, acti
         </div>
         {actions}
       </div>
-    </header>
+    </div>
   );
 }
 
