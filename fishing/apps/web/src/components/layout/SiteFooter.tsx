@@ -26,6 +26,14 @@ const FOOTER_LINKS = [
       { href: '/my', label: '내 프로필' },
     ],
   },
+  ...(process.env.NODE_ENV === 'development'
+    ? [
+        {
+          title: '개발',
+          links: [{ href: '/dev/ai-tester', label: 'AI 테스터' }],
+        },
+      ]
+    : []),
 ];
 
 export default function SiteFooter() {
