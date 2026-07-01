@@ -410,6 +410,7 @@ async function main() {
     { id: 36, nameKo: '가자미', nameEn: 'Stone Flounder', category: 'saltwater', rarityWeight: 1.1 },
     { id: 37, nameKo: '학공치', nameEn: 'Skipjack', category: 'saltwater', rarityWeight: 1.2 },
     { id: 38, nameKo: '강준치', nameEn: 'Skygazer', category: 'freshwater', rarityWeight: 1.6 },
+    { id: 39, nameKo: '블루길', nameEn: 'Bluegill', category: 'freshwater', rarityWeight: 1.1 },
     { id: 99, nameKo: '기타', nameEn: 'Other', category: 'freshwater', rarityWeight: 1.0 },
   ];
 

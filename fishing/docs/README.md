@@ -20,6 +20,10 @@
 | 문서 | 설명 |
 |---|---|
 | [11. 로컬 개발 실행 가이드 (npm)](./11-local-development.md) | **웹·API·모바일 실행 명령어, 포트, 트러블슈팅** |
+| [12. AI 서버 구조 정리](./12-ai-server-structure.md) | **FastAPI AI 서버 디렉터리, API, 데이터 흐름, 실행법** |
+| [13. YOLOv8 Fine-tuning](./13-yolo-training.md) | **39종 어종 학습 파이프라인, dataset/train/eval, 80% 목표** |
+| [14. AI 데이터·모델 전략](./14-ai-data-strategy.md) | **권장안: 38종 YOLO + 930종 CLIP, 크롤·AI Hub, 중단 복구** |
+| [15. AI 명령어·플래그 레퍼런스](./15-ai-commands.md) | **npm `ai:*` 스크립트, 크롤/학습 CLI 플래그, 39·100·930종 워크플로** |
 | [04. 기술 스택](./04-tech-stack.md) | 프레임워크, 라이브러리, 모노레포 구조 |
 | [05. 측정 인증 시스템](./05-measurement-system.md) | AI 처리 흐름, OpenCV 줄자 인식, 카메라 UI |
 | [06. 배포 가이드](./06-deployment.md) | 로컬 환경 세팅, 환경변수 전체 목록, AWS 배포 |
