@@ -19,6 +19,7 @@ import { AnnouncementsModule } from './announcements/announcements.module';
 import { ReportsModule } from './reports/reports.module';
 import { FeedbacksModule } from './feedbacks/feedbacks.module';
 import { HomeModule } from './home/home.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   controllers: [AppController],
@@ -44,6 +45,7 @@ import { HomeModule } from './home/home.module';
     ReportsModule,
     FeedbacksModule,
     HomeModule,
+    AiModule,
   ],
 })
 export class AppModule {}

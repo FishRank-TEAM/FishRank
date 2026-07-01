@@ -24,6 +24,7 @@
     "db:up": "npm run db:up --prefix ../..",
     "db:seed": "npm run db:seed --prefix ../..",
     "import:fish-species": "ts-node prisma/import-fish-species.ts",
+    "export:ai-catalog": "ts-node prisma/export-ai-species-catalog.ts",
     "sync:fish-info": "ts-node prisma/sync-fish-info.ts",
     "postinstall": "prisma generate --schema=./prisma/schema.prisma"
   },

@@ -15,6 +15,9 @@
 # User uploads
 fishing/apps/api/uploads/
 
+# AI model weights (too large for git)
+**/*.pt
+
 # OS & IDE
 .DS_Store
 Thumbs.db

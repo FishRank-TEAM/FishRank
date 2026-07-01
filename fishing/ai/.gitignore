@@ -1,0 +1,10 @@
+dataset/
+data/crawled/
+data/ruler_catches/
+runs/
+models/fish_classifier/
+__pycache__/
+*.pt
+*.log
+!models/.gitkeep
+.env

@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { AiService } from '../ai/ai.service';
+import { resolveSpeciesId } from '../ai/species-slug.util';
 import { determineGrade } from '../common/certification/certification-grade.util';
 import {
   computeImageHash,
@@ -14,7 +16,10 @@ import {
 
 export class CatchesService {
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private aiService: AiService,
+  ) {}
 
 
 
@@ -61,7 +66,7 @@ export class CatchesService {
 
 
 
-    await this.mockAiProcess(catch_.id);
+    await this.runAiProcess(catch_.id, imageUrl);
 
     const processed = await this.prisma.catch.findUnique({
       where: { id: catch_.id },
@@ -173,31 +178,43 @@ export class CatchesService {
 
 
 
-  private async mockAiProcess(catchId: string) {
-    const mockLength = Math.floor(Math.random() * 30) + 30;
-    const mockSpeciesId = Math.floor(Math.random() * 6) + 1;
-    const scenario = Math.random();
+  private async runAiProcess(catchId: string, imageUrl: string) {
+    const analysis = await this.aiService.analyze(catchId, imageUrl);
 
-    const rulerDetected = scenario >= 0.1;
-    const speciesConfidence = scenario < 0.25 ? 0.62 : scenario < 0.55 ? 0.78 : 0.92;
     const rules = {
-      ruleFlat: scenario >= 0.1,
-      ruleVertical: scenario >= 0.1,
-      ruleRuler: rulerDetected,
-      ruleFullBody: scenario >= 0.35,
+      ruleFlat: analysis.ruleFlat,
+      ruleVertical: analysis.ruleVertical,
+      ruleRuler: analysis.ruleRuler,
+      ruleFullBody: analysis.ruleFullBody,
     };
 
-    const gradeResult = determineGrade({ rulerDetected, speciesConfidence, rules });
+    const gradeResult = determineGrade({
+      rulerDetected: analysis.rulerDetected,
+      speciesConfidence: analysis.speciesConfidence,
+      rules,
+    });
+
+    const fishSpeciesId = resolveSpeciesId(analysis.speciesDetected);
+    const species = fishSpeciesId
+      ? await this.prisma.fishSpecies.findUnique({ where: { id: fishSpeciesId } })
+      : null;
+
+    const lengthCm = analysis.rulerLengthCm;
+    const rarityWeight = species ? Number(species.rarityWeight) : 1.0;
+    const rankScore =
+      gradeResult.rankScoreEligible && lengthCm != null
+        ? Math.round(lengthCm * rarityWeight * 100) / 100
+        : null;
 
     await this.prisma.catch.update({
       where: { id: catchId },
       data: {
         status: gradeResult.status,
-        fishSpeciesId: mockSpeciesId,
-        lengthCm: mockLength,
-        aiLengthCm: mockLength,
-        aiConfidence: speciesConfidence,
-        rankScore: gradeResult.rankScoreEligible ? mockLength * 1.0 : null,
+        fishSpeciesId: species?.id ?? null,
+        lengthCm,
+        aiLengthCm: lengthCm,
+        aiConfidence: analysis.speciesConfidence,
+        rankScore,
       },
     });
 
@@ -205,10 +222,12 @@ export class CatchesService {
       data: {
         catchId,
         grade: gradeResult.grade,
-        rulerDetected,
-        rulerLengthCm: rulerDetected ? mockLength : null,
-        speciesDetected: '배스',
-        speciesConfidence,
+        rulerDetected: analysis.rulerDetected,
+        rulerStartPx: analysis.rulerStartPx,
+        rulerEndPx: analysis.rulerEndPx,
+        rulerLengthCm: analysis.rulerLengthCm,
+        speciesDetected: species?.nameKo ?? analysis.speciesDetected,
+        speciesConfidence: analysis.speciesConfidence,
         ...rules,
         processedAt: new Date(),
         errorMessage: gradeResult.status === 'rejected' ? gradeResult.reason : null,
