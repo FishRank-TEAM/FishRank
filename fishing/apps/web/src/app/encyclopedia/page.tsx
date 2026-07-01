@@ -113,22 +113,23 @@ export default function EncyclopediaPage() {
 
   return (
     <main>
-      <div className="site-container site-page-body" style={{ maxWidth: 1100 }}>
-        <PageBanner
-          title="어종 사전"
-          description="사진·시즌·미끼 — 필요한 정보만"
-          action={
-            isLoggedIn ? (
-              <Link
-                href="/encyclopedia/new"
-                className="shrink-0 rounded-lg bg-[#22C55E] px-5 py-2 text-sm font-semibold text-white no-underline transition hover:bg-[#1db954]"
-              >
-                + 어종 추가
-              </Link>
-            ) : undefined
-          }
-        />
+      <PageBanner
+        fullWidth
+        title="어종 사전"
+        description="사진·시즌·미끼 — 필요한 정보만"
+        action={
+          isLoggedIn ? (
+            <Link
+              href="/encyclopedia/new"
+              className="shrink-0 rounded-lg bg-[#22C55E] px-5 py-2 text-sm font-semibold text-white no-underline transition hover:bg-[#1db954]"
+            >
+              + 어종 추가
+            </Link>
+          ) : undefined
+        }
+      />
 
+      <div className="site-container site-page-body" style={{ maxWidth: 1100 }}>
         {stats && (
           <p className="post-meta-muted encyclopedia-list-stats">
             전체 {stats.total.toLocaleString()}종 · 민물 {stats.freshwater.toLocaleString()} · 바다{' '}

@@ -240,6 +240,21 @@ export const FISH_CATALOG: FishCatalogEntry[] = [
     avgLengthCm: 50,
     maxLengthCm: 100,
   },
+  {
+    speciesId: 39,
+    nameKo: '블루길',
+    nameEn: 'Bluegill',
+    scientificName: 'Lepomis macrochirus',
+    iNaturalistTaxonId: 49248,
+    category: 'freshwater',
+    rarityWeight: 1.1,
+    publicDataQuery: '블루길',
+    season: '5월~10월',
+    bait: '웜, 크랭크베이트, 지그헤드, 떡밥',
+    technique: '루어낚시, 찌낚시 (배스와 함께 서식)',
+    avgLengthCm: 18,
+    maxLengthCm: 30,
+  },
 
   // ── 바다 ──
   {
