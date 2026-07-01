@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ReviewCatchDto } from './dto/review-catch.dto';
 import type { UpsertAnnouncementDto } from './dto/upsert-announcement.dto';
 import type { UpdateFeedbackDto } from './dto/update-feedback.dto';
+import type { UpdateUserDto } from './dto/update-user.dto';
+import type { UpdateCatchRankingDto } from './dto/update-catch-ranking.dto';
+import type { UpdateSpeciesDto } from './dto/update-species.dto';
 
 @Injectable()
 export class AdminService {
@@ -383,5 +386,391 @@ export class AdminService {
       },
       include: { user: { select: { id: true, nickname: true } } },
     });
+  }
+
+  async listUsers(search?: string, role?: string, accountStatus = 'active', page = 1, limit = 20) {
+    const take = Math.min(50, Math.max(1, limit));
+    const skip = (Math.max(1, page) - 1) * take;
+    const where: Record<string, unknown> = {};
+
+    if (accountStatus === 'suspended') {
+      where.deletedAt = { not: null };
+    } else if (accountStatus === 'all') {
+      // no deletedAt filter
+    } else {
+      where.deletedAt = null;
+    }
+
+    if (role && role !== 'all') where.role = role;
+
+    const q = search?.trim();
+    if (q) {
+      where.OR = [
+        { email: { contains: q, mode: 'insensitive' } },
+        { nickname: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          nickname: true,
+          role: true,
+          provider: true,
+          profileImage: true,
+          fishingCategory: true,
+          activityRegion: true,
+          createdAt: true,
+          deletedAt: true,
+          _count: {
+            select: {
+              catches: true,
+              posts: true,
+              comments: true,
+              userFeedbacks: true,
+              contentReports: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page: Math.max(1, page),
+      limit: take,
+      totalPages: Math.max(1, Math.ceil(total / take)),
+    };
+  }
+
+  async getUserDetail(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        nickname: true,
+        role: true,
+        provider: true,
+        providerId: true,
+        profileImage: true,
+        bio: true,
+        activityRegion: true,
+        fishingCategory: true,
+        featuredCatchIds: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+        _count: {
+          select: {
+            catches: true,
+            posts: true,
+            comments: true,
+            userFeedbacks: true,
+            contentReports: true,
+            catchVotes: true,
+            tournamentEntries: true,
+          },
+        },
+      },
+    });
+    if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+
+    const [recentCatches, recentPosts, recentFeedbacks] = await Promise.all([
+      this.prisma.catch.findMany({
+        where: { userId, deletedAt: null },
+        include: {
+          fishSpecies: { select: { nameKo: true } },
+          certification: { select: { grade: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+      }),
+      this.prisma.post.findMany({
+        where: { userId, deletedAt: null },
+        select: { id: true, title: true, viewCount: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      this.prisma.userFeedback.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    return { user, recentCatches, recentPosts, recentFeedbacks };
+  }
+
+  async updateUser(userId: string, dto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+
+    if (dto.role === 'user' && user.role === 'admin') {
+      const adminCount = await this.prisma.user.count({
+        where: { role: 'admin', deletedAt: null, id: { not: userId } },
+      });
+      if (adminCount < 1) {
+        throw new BadRequestException('마지막 관리자 계정의 권한은 해제할 수 없습니다.');
+      }
+    }
+
+    const data: Record<string, unknown> = {};
+    if (dto.role) data.role = dto.role;
+    if (dto.accountStatus === 'suspended') data.deletedAt = new Date();
+    if (dto.accountStatus === 'active') data.deletedAt = null;
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        email: true,
+        nickname: true,
+        role: true,
+        deletedAt: true,
+      },
+    });
+  }
+
+  async listAdminRankings(
+    periodType = 'alltime',
+    rankingType: 'official' | 'unofficial' = 'official',
+    speciesId?: number,
+    page = 1,
+    limit = 30,
+  ) {
+    const take = Math.min(50, Math.max(1, limit));
+    const skip = (Math.max(1, page) - 1) * take;
+    const weekly = periodType === 'weekly';
+
+    const where: Record<string, unknown> =
+      rankingType === 'unofficial'
+        ? { status: 'approved', recordType: 'personal', deletedAt: null }
+        : { status: 'approved', recordType: 'certified', deletedAt: null };
+
+    if (speciesId) where.fishSpeciesId = speciesId;
+    if (weekly) {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      where.createdAt = { gte: weekAgo };
+    }
+
+    const include = {
+      user: { select: { id: true, nickname: true, email: true, profileImage: true } },
+      fishSpecies: { select: { id: true, nameKo: true, rarityWeight: true } },
+      certification: { select: { grade: true } },
+      _count: { select: { votes: true } },
+    };
+
+    const total = await this.prisma.catch.count({ where });
+    let items;
+
+    if (rankingType === 'official') {
+      items = await this.prisma.catch.findMany({
+        where,
+        include,
+        orderBy: { rankScore: 'desc' },
+        skip,
+        take,
+      });
+    } else {
+      const pool = await this.prisma.catch.findMany({
+        where,
+        include,
+        orderBy: { createdAt: 'desc' },
+        take: Math.min(1000, total),
+      });
+      items = pool
+        .sort((a, b) => b._count.votes - a._count.votes)
+        .slice(skip, skip + take);
+    }
+
+    return {
+      items: items.map((c, index) => ({
+        ...c,
+        displayRank: skip + index + 1,
+        effectiveScore:
+          rankingType === 'official' ? Number(c.rankScore ?? 0) : c._count.votes,
+      })),
+      total,
+      page: Math.max(1, page),
+      limit: take,
+      totalPages: Math.max(1, Math.ceil(total / take)),
+      periodType,
+      rankingType,
+    };
+  }
+
+  async updateCatchRanking(catchId: string, dto: UpdateCatchRankingDto) {
+    const catch_ = await this.prisma.catch.findUnique({
+      where: { id: catchId, deletedAt: null },
+      include: { certification: true },
+    });
+    if (!catch_) throw new NotFoundException('기록을 찾을 수 없습니다.');
+
+    const data: Record<string, unknown> = {};
+    if (dto.rankScore !== undefined) data.rankScore = dto.rankScore;
+    if (dto.lengthCm !== undefined) data.lengthCm = dto.lengthCm;
+    if (dto.status) data.status = dto.status;
+    if (dto.excludeFromRanking) data.rankScore = null;
+
+    if (dto.status === 'approved' && dto.rankScore === undefined && !dto.excludeFromRanking) {
+      const length = dto.lengthCm ?? catch_.lengthCm;
+      if (length) data.rankScore = Number(length);
+    }
+
+    return this.prisma.catch.update({
+      where: { id: catchId },
+      data,
+      include: {
+        user: { select: { id: true, nickname: true, email: true } },
+        fishSpecies: { select: { id: true, nameKo: true } },
+        certification: { select: { grade: true } },
+        _count: { select: { votes: true } },
+      },
+    });
+  }
+
+  async deleteCatch(catchId: string) {
+    const catch_ = await this.prisma.catch.findUnique({ where: { id: catchId, deletedAt: null } });
+    if (!catch_) throw new NotFoundException('기록을 찾을 수 없습니다.');
+    await this.prisma.catch.update({
+      where: { id: catchId },
+      data: { deletedAt: new Date() },
+    });
+    return { deleted: true };
+  }
+
+  async listComments(page = 1, limit = 30, search?: string) {
+    const take = Math.min(50, Math.max(1, limit));
+    const skip = (Math.max(1, page) - 1) * take;
+    const where: Record<string, unknown> = { deletedAt: null };
+
+    const q = search?.trim();
+    if (q) {
+      where.OR = [
+        { content: { contains: q, mode: 'insensitive' } },
+        { user: { nickname: { contains: q, mode: 'insensitive' } } },
+        { post: { title: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.comment.findMany({
+        where,
+        include: {
+          user: { select: { id: true, nickname: true, email: true } },
+          post: { select: { id: true, title: true, deletedAt: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.comment.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page: Math.max(1, page),
+      limit: take,
+      totalPages: Math.max(1, Math.ceil(total / take)),
+    };
+  }
+
+  async deleteComment(commentId: string) {
+    const comment = await this.prisma.comment.findUnique({ where: { id: commentId, deletedAt: null } });
+    if (!comment) throw new NotFoundException('댓글을 찾을 수 없습니다.');
+    await this.prisma.comment.update({
+      where: { id: commentId },
+      data: { deletedAt: new Date() },
+    });
+    return { deleted: true };
+  }
+
+  async listSpecies(search?: string, page = 1, limit = 30) {
+    const take = Math.min(100, Math.max(1, limit));
+    const skip = (Math.max(1, page) - 1) * take;
+    const where: Record<string, unknown> = {};
+    const q = search?.trim();
+    if (q) {
+      where.OR = [
+        { nameKo: { contains: q, mode: 'insensitive' } },
+        { nameEn: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.fishSpecies.findMany({
+        where,
+        include: {
+          _count: { select: { catches: true } },
+        },
+        orderBy: { nameKo: 'asc' },
+        skip,
+        take,
+      }),
+      this.prisma.fishSpecies.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page: Math.max(1, page),
+      limit: take,
+      totalPages: Math.max(1, Math.ceil(total / take)),
+    };
+  }
+
+  async updateSpecies(speciesId: number, dto: UpdateSpeciesDto) {
+    const species = await this.prisma.fishSpecies.findUnique({ where: { id: speciesId } });
+    if (!species) throw new NotFoundException('어종을 찾을 수 없습니다.');
+
+    return this.prisma.fishSpecies.update({
+      where: { id: speciesId },
+      data: {
+        ...(dto.rarityWeight !== undefined ? { rarityWeight: dto.rarityWeight } : {}),
+        ...(dto.minLengthCm !== undefined ? { minLengthCm: dto.minLengthCm } : {}),
+      },
+      include: { _count: { select: { catches: true } } },
+    });
+  }
+
+  async listTournamentEntries(tournamentId?: string, page = 1, limit = 30) {
+    const take = Math.min(50, Math.max(1, limit));
+    const skip = (Math.max(1, page) - 1) * take;
+    const where: Record<string, unknown> = {};
+    if (tournamentId) where.tournamentId = tournamentId;
+
+    const [items, total] = await Promise.all([
+      this.prisma.tournamentEntry.findMany({
+        where,
+        include: {
+          user: { select: { id: true, nickname: true, email: true } },
+          tournament: { select: { id: true, title: true, status: true } },
+        },
+        orderBy: { joinedAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.tournamentEntry.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page: Math.max(1, page),
+      limit: take,
+      totalPages: Math.max(1, Math.ceil(total / take)),
+    };
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -8,6 +8,7 @@ import { getImageUrl } from '@/lib/images';
 import { formatLength, formatTimeAgo } from '@/lib/utils';
 
 const STATUS_TABS = [
+  { key: 'pending', label: '검수 대기' },
   { key: 'approved', label: '승인됨' },
   { key: 'rejected', label: '반려됨' },
   { key: 'all', label: '전체' },
@@ -29,12 +30,17 @@ export default function AdminCatchesPage() {
 
 function AdminCatchesContent() {
   const searchParams = useSearchParams();
-  const initialStatus = searchParams.get('status') || 'approved';
+  const initialStatus = searchParams.get('status') || 'pending';
   const [status, setStatus] = useState(initialStatus);
   const [page, setPage] = useState(1);
   const [rejectNote, setRejectNote] = useState('');
   const [rejectId, setRejectId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const s = searchParams.get('status');
+    if (s) setStatus(s);
+  }, [searchParams]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-catches', status, page],

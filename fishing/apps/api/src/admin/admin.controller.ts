@@ -7,6 +7,9 @@ import { AdminService } from './admin.service';
 import { ReviewCatchDto } from './dto/review-catch.dto';
 import { UpsertAnnouncementDto } from './dto/upsert-announcement.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateCatchRankingDto } from './dto/update-catch-ranking.dto';
+import { UpdateSpeciesDto } from './dto/update-species.dto';
 
 @ApiTags('관리자')
 @Controller('admin')
@@ -122,6 +125,121 @@ export class AdminController {
   @ApiOperation({ summary: '피드백 상태 변경' })
   async updateFeedback(@Param('id') id: string, @Body() dto: UpdateFeedbackDto) {
     const data = await this.admin.updateFeedback(id, dto);
+    return { success: true, data };
+  }
+
+  @Get('users')
+  @ApiOperation({ summary: '회원 목록' })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'role', required: false })
+  @ApiQuery({ name: 'accountStatus', required: false, enum: ['active', 'suspended', 'all'] })
+  async listUsers(
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('accountStatus') accountStatus = 'active',
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    const data = await this.admin.listUsers(search, role, accountStatus, Number(page) || 1, Number(limit) || 20);
+    return { success: true, data };
+  }
+
+  @Get('users/:id')
+  @ApiOperation({ summary: '회원 상세' })
+  async getUser(@Param('id') id: string) {
+    const data = await this.admin.getUserDetail(id);
+    return { success: true, data };
+  }
+
+  @Patch('users/:id')
+  @ApiOperation({ summary: '회원 역할·계정 상태 변경' })
+  async updateUser(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+    const data = await this.admin.updateUser(id, dto);
+    return { success: true, data };
+  }
+
+  @Get('rankings')
+  @ApiOperation({ summary: '랭킹 운영 목록' })
+  @ApiQuery({ name: 'periodType', required: false, enum: ['weekly', 'alltime'] })
+  @ApiQuery({ name: 'rankingType', required: false, enum: ['official', 'unofficial'] })
+  @ApiQuery({ name: 'speciesId', required: false })
+  async listRankings(
+    @Query('periodType') periodType = 'alltime',
+    @Query('rankingType') rankingType: 'official' | 'unofficial' = 'official',
+    @Query('speciesId') speciesId?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '30',
+  ) {
+    const sid = speciesId ? Number(speciesId) : undefined;
+    const data = await this.admin.listAdminRankings(
+      periodType,
+      rankingType,
+      sid,
+      Number(page) || 1,
+      Number(limit) || 30,
+    );
+    return { success: true, data };
+  }
+
+  @Patch('catches/:id/ranking')
+  @ApiOperation({ summary: '랭킹 점수·상태 수동 조정' })
+  async updateCatchRanking(@Param('id') id: string, @Body() dto: UpdateCatchRankingDto) {
+    const data = await this.admin.updateCatchRanking(id, dto);
+    return { success: true, data };
+  }
+
+  @Delete('catches/:id')
+  @ApiOperation({ summary: '기록 삭제 (soft delete)' })
+  async deleteCatch(@Param('id') id: string) {
+    const data = await this.admin.deleteCatch(id);
+    return { success: true, data };
+  }
+
+  @Get('comments')
+  @ApiOperation({ summary: '댓글 목록' })
+  async listComments(
+    @Query('search') search?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '30',
+  ) {
+    const data = await this.admin.listComments(Number(page) || 1, Number(limit) || 30, search);
+    return { success: true, data };
+  }
+
+  @Delete('comments/:id')
+  @ApiOperation({ summary: '댓글 삭제' })
+  async deleteComment(@Param('id') id: string) {
+    const data = await this.admin.deleteComment(id);
+    return { success: true, data };
+  }
+
+  @Get('species')
+  @ApiOperation({ summary: '어종 마스터 목록' })
+  async listSpecies(
+    @Query('search') search?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '30',
+  ) {
+    const data = await this.admin.listSpecies(search, Number(page) || 1, Number(limit) || 30);
+    return { success: true, data };
+  }
+
+  @Patch('species/:id')
+  @ApiOperation({ summary: '어종 파라미터 수정 (희귀도·법정치)' })
+  async updateSpecies(@Param('id') id: string, @Body() dto: UpdateSpeciesDto) {
+    const data = await this.admin.updateSpecies(Number(id), dto);
+    return { success: true, data };
+  }
+
+  @Get('tournament-entries')
+  @ApiOperation({ summary: '대회 참가 목록' })
+  @ApiQuery({ name: 'tournamentId', required: false })
+  async listTournamentEntries(
+    @Query('tournamentId') tournamentId?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '30',
+  ) {
+    const data = await this.admin.listTournamentEntries(tournamentId, Number(page) || 1, Number(limit) || 30);
     return { success: true, data };
   }
 }

@@ -5,10 +5,15 @@ import { usePathname } from 'next/navigation';
 
 const NAV = [
   { href: '/admin', label: '대시보드', icon: '📊', exact: true },
+  { href: '/admin/users', label: '회원 관리', icon: '👥' },
+  { href: '/admin/rankings', label: '랭킹 관리', icon: '🏅' },
   { href: '/admin/reports', label: '신고 관리', icon: '🚨' },
   { href: '/admin/feedbacks', label: '피드백', icon: '💬' },
-  { href: '/admin/catches', label: '기록 내역', icon: '✅' },
+  { href: '/admin/catches', label: '기록 검수', icon: '✅' },
+  { href: '/admin/comments', label: '댓글 관리', icon: '💭' },
+  { href: '/admin/species', label: '어종 관리', icon: '🐟' },
   { href: '/admin/tournaments', label: '대회 관리', icon: '🏆' },
+  { href: '/admin/tournament-entries', label: '대회 참가', icon: '🎫' },
   { href: '/admin/announcements', label: '공지·이벤트', icon: '📢' },
   { href: '/admin/posts', label: '게시글 관리', icon: '📝' },
 ];
