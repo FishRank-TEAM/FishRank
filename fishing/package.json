@@ -31,6 +31,7 @@
     "ai:eval": "py -3.12 ai/training/evaluate.py",
     "ai:pipeline": "npm run ai:dataset && npm run ai:train && npm run ai:eval",
     "ai:export-ruler": "npm exec --prefix apps/api -- ts-node prisma/export-ruler-dataset.ts",
+    "ai:package:gpu": "py -3.12 ai/training/package_gpu_zip.py",
     "mobile": "node scripts/mobile-dev.mjs",
     "mobile:android": "node scripts/mobile-dev.mjs --android",
     "mobile:stop": "node scripts/mobile-stop.mjs",

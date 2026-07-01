@@ -310,7 +310,43 @@ npm run ai:train -- --device cuda --epochs 100 --batch 32
 
 ---
 
-## 트러블슈팅
+## RTX 5070 / GPU PC 오프라인 학습
+
+dataset을 zip으로 묶어 GPU PC에서 `run.bat` 한 번으로 학습합니다.
+
+### 개발 PC — zip 만들기
+
+```bash
+# dataset 빌드 (아직 없으면)
+npm run ai:dataset -- --angling-only --skip-inat --max-crawled-per-class 500 --max-per-class 400
+
+# zip 생성 (~3.3GB) → ai/dist/fishrank-gpu-train.zip
+npm run ai:package:gpu
+
+# 체크포인트 없이 (용량 절약)
+npm run ai:package:gpu -- --no-checkpoint
+```
+
+### 5070 PC — 학습
+
+1. `fishrank-gpu-train.zip` 압축 해제
+2. `fishrank-gpu-train` 폴더에서 **`run.bat`** 실행
+
+```bat
+run.bat
+```
+
+옵션: `run.bat --fresh` · `run.bat --batch 32` · `run.bat --epochs 80`
+
+### 학습 후 — FishRank에 반영
+
+`export/best.pt` → `fishing/ai/models/fish_classifier/weights/best.pt`
+
+```bash
+npm run ai:restart
+```
+
+---
 
 | 증상 | 조치 |
 |---|---|

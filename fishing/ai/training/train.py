@@ -12,6 +12,7 @@ sys.path.insert(0, str(AI_ROOT))
 
 DEFAULT_DATASET = AI_ROOT / "dataset"
 DEFAULT_OUTPUT = AI_ROOT / "models" / "fish_classifier"
+DEFAULT_WEIGHTS = DEFAULT_OUTPUT / "weights" / "last.pt"
 
 
 def main() -> None:
@@ -23,11 +24,20 @@ def main() -> None:
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--base-model", type=str, default="yolov8s-cls.pt")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="last.pt 에서 이어서 학습 (없으면 --base-model 부터)",
+    )
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="기존 체크포인트 무시하고 처음부터 학습",
+    )
     args = parser.parse_args()
 
     data_dir = args.data.resolve()
     train_dir = data_dir / "train"
-    val_dir = data_dir / "val"
 
     if not train_dir.is_dir() or not any(train_dir.iterdir()):
         print("dataset/train 이 비어 있습니다. 먼저 build_dataset.py 를 실행하세요.")
@@ -36,8 +46,24 @@ def main() -> None:
     from ultralytics import YOLO
 
     args.output.mkdir(parents=True, exist_ok=True)
+    last_pt = (args.output / "weights" / "last.pt").resolve()
 
-    model = YOLO(args.base_model)
+    if args.fresh and args.resume:
+        print("--fresh 와 --resume 은 동시에 사용할 수 없습니다.")
+        sys.exit(1)
+
+    resume = args.resume
+    if not args.fresh and not args.resume and last_pt.is_file():
+        print(f"기존 체크포인트 발견: {last_pt}")
+        print("이어서 학습합니다. 처음부터 하려면 --fresh 를 붙이세요.")
+        resume = True
+
+    if resume and last_pt.is_file():
+        model = YOLO(str(last_pt))
+        print(f"재개: {last_pt}")
+    else:
+        model = YOLO(args.base_model)
+        print(f"새 학습: {args.base_model}")
     results = model.train(
         data=str(data_dir),
         epochs=args.epochs,
@@ -47,6 +73,7 @@ def main() -> None:
         project=str(args.output.parent),
         name=args.output.name,
         exist_ok=True,
+        resume=resume,
         patience=10,
         save=True,
         verbose=True,
