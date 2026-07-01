@@ -1,8 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import { seedImagePath, variantCount } from './seed-fish-images';
 
-/** 랭킹 UI에서 사용하는 6개 어종 (fish_species.id) */
-export const RANKING_SPECIES_IDS = [1, 2, 3, 8, 9, 10] as const;
+/** 랭킹 UI 대표 어종 (fish_species.id) — packages/shared ranking.constants 와 동기화 */
+export const RANKING_SPECIES_IDS = [
+  1, 2, 3, 4, 5, 6, 17, 18,
+  8, 9, 10, 11, 12, 13, 15, 28, 30, 33,
+] as const;
 
 const CERTIFIED_PER_SPECIES = 120;
 const PERSONAL_PER_SPECIES = 30;
@@ -12,9 +15,21 @@ const SPECIES_NAMES: Record<number, string> = {
   1: '배스',
   2: '쏘가리',
   3: '가물치',
+  4: '붕어',
+  5: '잉어',
+  6: '메기',
+  17: '향어',
+  18: '송어',
   8: '참돔',
   9: '광어',
   10: '우럭',
+  11: '감성돔',
+  12: '농어',
+  13: '방어',
+  15: '삼치',
+  28: '돌돔',
+  30: '볼락',
+  33: '갈치',
 };
 const NICK_SUFFIX = ['왕', '고수', '마스터', '헌터', '킹', '조사', '러', '맨', '프로', '캡틴'];
 
@@ -52,9 +67,21 @@ const SPECIES_META: Record<number, SpeciesMeta> = {
   1: { id: 1, minCm: 28, maxCm: 64, category: 'freshwater' },
   2: { id: 2, minCm: 22, maxCm: 58, category: 'freshwater' },
   3: { id: 3, minCm: 48, maxCm: 92, category: 'freshwater' },
+  4: { id: 4, minCm: 18, maxCm: 42, category: 'freshwater' },
+  5: { id: 5, minCm: 42, maxCm: 88, category: 'freshwater' },
+  6: { id: 6, minCm: 35, maxCm: 78, category: 'freshwater' },
+  17: { id: 17, minCm: 16, maxCm: 28, category: 'freshwater' },
+  18: { id: 18, minCm: 26, maxCm: 54, category: 'freshwater' },
   8: { id: 8, minCm: 38, maxCm: 76, category: 'saltwater' },
   9: { id: 9, minCm: 42, maxCm: 82, category: 'saltwater' },
   10: { id: 10, minCm: 32, maxCm: 52, category: 'saltwater' },
+  11: { id: 11, minCm: 34, maxCm: 62, category: 'saltwater' },
+  12: { id: 12, minCm: 44, maxCm: 92, category: 'saltwater' },
+  13: { id: 13, minCm: 58, maxCm: 108, category: 'saltwater' },
+  15: { id: 15, minCm: 48, maxCm: 98, category: 'saltwater' },
+  28: { id: 28, minCm: 32, maxCm: 64, category: 'saltwater' },
+  30: { id: 30, minCm: 18, maxCm: 38, category: 'saltwater' },
+  33: { id: 33, minCm: 68, maxCm: 118, category: 'saltwater' },
 };
 
 function mulberry32(seed: number) {

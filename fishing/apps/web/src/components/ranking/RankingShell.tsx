@@ -7,7 +7,7 @@ import RankingFilters from '@/components/ranking/RankingFilters';
 import RankingTypeTabs from '@/components/ranking/RankingTypeTabs';
 import CertificationGradeGuide from '@/components/certification/CertificationGradeGuide';
 import { RankingFilterProvider, useRankingFilters } from '@/components/ranking/RankingFilterContext';
-import { isValidRankingSpeciesId } from '@/lib/ranking.constants';
+import { isValidRankingSpeciesId, getRankingSpeciesCategory } from '@/lib/ranking.constants';
 import { IS_BRAG_UPLOAD_ENABLED, IS_CERTIFIED_UPLOAD_ENABLED } from '@/lib/platform';
 import Link from 'next/link';
 import { preloadKakaoMap } from '@/lib/kakao-map-loader';
@@ -18,7 +18,7 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isRegional = pathname.startsWith('/ranking/regional');
-  const { period, setPeriod, speciesId, setSpeciesId, rankingType, setRankingType } = useRankingFilters();
+  const { period, setPeriod, speciesId, setSpeciesId, speciesCategory, setSpeciesCategory, rankingType, setRankingType } = useRankingFilters();
 
   useEffect(() => {
     const type = searchParams.get('rankingType');
@@ -31,6 +31,9 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
       const id = Number(sid);
       if (isValidRankingSpeciesId(id)) {
         setSpeciesId(id);
+        if (id !== 0) {
+          setSpeciesCategory(getRankingSpeciesCategory(id));
+        }
       }
       return;
     }
@@ -38,7 +41,7 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
     if (type === 'unofficial') {
       setSpeciesId(0);
     }
-  }, [searchParams, setSpeciesId, setRankingType]);
+  }, [searchParams, setSpeciesId, setSpeciesCategory, setRankingType]);
 
   useEffect(() => {
     void preloadKakaoMap().catch(() => {});
@@ -46,13 +49,14 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="ranking-page">
+    <>
       <PageBanner
+        fullWidth
         title="랭킹"
         description="인증 기록 · rank_score 기준"
-        className="mb-6"
       />
 
+      <div className="ranking-page">
       <header className="ranking-page-head">
         <RankingTypeTabs />
         <RankingTabs />
@@ -61,6 +65,8 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
           onPeriodChange={setPeriod}
           speciesId={speciesId}
           onSpeciesChange={setSpeciesId}
+          speciesCategory={speciesCategory}
+          onSpeciesCategoryChange={setSpeciesCategory}
           rankingType={rankingType}
         />
         {rankingType === 'unofficial' && !isRegional && IS_BRAG_UPLOAD_ENABLED && (
@@ -96,7 +102,8 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
       ) : (
         <div className="ranking-national-body">{children}</div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
