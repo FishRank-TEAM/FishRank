@@ -5,7 +5,10 @@ import { useRouter } from 'expo-router';
 import {
   DEFAULT_RANKING_SPECIES_ID,
   ALL_RANKING_SPECIES_ID,
-  RANKING_SPECIES_LIST,
+  RANKING_SPECIES_CATEGORY_TABS,
+  filterRankingSpeciesByCategory,
+  getRankingSpeciesCategory,
+  type RankingSpeciesCategory,
 } from '@fishrank/shared';
 import { api } from '@/lib/api';
 import { SegmentedTabs } from '@/components/ui/ChipTabs';
@@ -30,6 +33,7 @@ export default function RankingScreen() {
   const [period, setPeriod] = useState('weekly');
   const [rankingType, setRankingType] = useState('official');
   const [speciesId, setSpeciesId] = useState(DEFAULT_RANKING_SPECIES_ID);
+  const [speciesCategory, setSpeciesCategory] = useState<RankingSpeciesCategory>('freshwater');
   const [bragItem, setBragItem] = useState<RankingItem | null>(null);
 
   const effectiveSpeciesId =
@@ -64,12 +68,24 @@ export default function RankingScreen() {
   const rest = rankings.filter((r) => r.rank > 3);
   const highlight = data?.highlight;
 
+  const categorySpecies = filterRankingSpeciesByCategory(speciesCategory);
   const speciesTabs = [
     ...(rankingType === 'unofficial'
       ? [{ key: String(ALL_RANKING_SPECIES_ID), label: '전체' }]
       : []),
-    ...RANKING_SPECIES_LIST.map((s) => ({ key: String(s.id), label: s.name })),
+    ...categorySpecies.map((s) => ({ key: String(s.id), label: s.name })),
   ];
+
+  const handleCategoryChange = (category: string) => {
+    const next = category as RankingSpeciesCategory;
+    setSpeciesCategory(next);
+    const nextList = filterRankingSpeciesByCategory(next);
+    const keepCurrent =
+      speciesId === ALL_RANKING_SPECIES_ID || nextList.some((s) => s.id === speciesId);
+    if (!keepCurrent && nextList.length > 0) {
+      setSpeciesId(nextList[0].id);
+    }
+  };
 
   const myRankEntry = myNickname
     ? rankings.find((r) => r.user.nickname === myNickname)
@@ -126,12 +142,33 @@ export default function RankingScreen() {
                   />
                 </View>
               </View>
+              <View style={styles.filterRow}>
+                <View style={styles.filterGroup}>
+                  <Text style={styles.filterGroupLabel}>수계</Text>
+                  <SegmentedTabs
+                    compact
+                    style={styles.filterSegment}
+                    tabs={RANKING_SPECIES_CATEGORY_TABS.map((t) => ({
+                      key: t.key,
+                      label: t.label,
+                    }))}
+                    active={speciesCategory}
+                    onChange={handleCategoryChange}
+                  />
+                </View>
+              </View>
               <SpeciesChipScroll
                 compact
                 fadeTo={colors.bg}
                 tabs={speciesTabs}
                 active={String(effectiveSpeciesId)}
-                onChange={(v) => setSpeciesId(Number(v))}
+                onChange={(v) => {
+                  const id = Number(v);
+                  setSpeciesId(id);
+                  if (id !== ALL_RANKING_SPECIES_ID) {
+                    setSpeciesCategory(getRankingSpeciesCategory(id));
+                  }
+                }}
               />
             </View>
             {!showInitialLoad && topThree.length > 0 ? (

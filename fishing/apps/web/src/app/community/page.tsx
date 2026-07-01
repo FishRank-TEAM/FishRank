@@ -43,22 +43,23 @@ export default function CommunityPage() {
 
   return (
     <main>
-      <div className="site-container site-page-body" style={{ maxWidth: 800 }}>
-        <PageBanner
-          title="커뮤니티"
-          description="낚시 포인트, 장비, 기록 이야기를 나눠보세요"
-          action={
-            isLoggedIn ? (
-              <Link
-                href="/community/write"
-                className="shrink-0 rounded-lg bg-[#22C55E] px-5 py-2 text-sm font-semibold text-white no-underline transition hover:bg-[#1db954]"
-              >
-                ✏️ 글 쓰기
-              </Link>
-            ) : undefined
-          }
-        />
+      <PageBanner
+        fullWidth
+        title="커뮤니티"
+        description="낚시 포인트, 장비, 기록 이야기를 나눠보세요"
+        action={
+          isLoggedIn ? (
+            <Link
+              href="/community/write"
+              className="shrink-0 rounded-lg bg-[#22C55E] px-5 py-2 text-sm font-semibold text-white no-underline transition hover:bg-[#1db954]"
+            >
+              ✏️ 글 쓰기
+            </Link>
+          ) : undefined
+        }
+      />
 
+      <div className="site-container site-page-body" style={{ maxWidth: 800 }}>
         {!isLoggedIn && (
           <div className="site-alert mb-5">
             <p>로그인하면 글을 작성할 수 있습니다.</p>

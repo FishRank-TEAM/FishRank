@@ -24,12 +24,12 @@ export default function CatchCard({ item, compact }: { item: any; compact?: bool
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
           {item.fishSpecies && (
-            <span style={{ background: '#e3f2fd', color: '#0d47a1', fontSize: '10px', fontWeight: 500, borderRadius: '3px', padding: '2px 7px' }}>
+            <span style={{ background: '#f3f4f6', color: '#0A2540', fontSize: '10px', fontWeight: 500, borderRadius: '3px', padding: '2px 7px' }}>
               {item.fishSpecies.nameKo}
             </span>
           )}
           {item.certification?.grade && (
-            <span style={{ background: '#e8f5e9', color: '#2e7d32', fontSize: '10px', fontWeight: 500, borderRadius: '3px', padding: '2px 7px' }}>
+            <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '10px', fontWeight: 700, borderRadius: '3px', padding: '2px 7px' }}>
               인증 {item.certification.grade}
             </span>
           )}
