@@ -27,6 +27,8 @@ export type RegionAnchorResult = {
 
 @Injectable()
 export class GeocodeService {
+  private readonly geocodeCache = new Map<string, { lat: number; lng: number }>();
+
   constructor(private config: ConfigService) {}
 
   search(query: string): Promise<PlaceResult[]> {
@@ -58,6 +60,34 @@ export class GeocodeService {
     const fromKakao = await this.reverseKakaoRegion(lat, lng);
     if (fromKakao) return fromKakao;
     return this.defaultRegionAnchor();
+  }
+
+  /** 저수지명 + 행정구역으로 카카오 키워드 검색 (결과 캐시) */
+  async geocodeReservoir(facName: string, county: string | null): Promise<{ lat: number; lng: number } | null> {
+    const cacheKey = `${facName}|${county ?? ''}`;
+    const cached = this.geocodeCache.get(cacheKey);
+    if (cached) return cached;
+
+    const queries = [
+      `${county ?? ''} ${facName}`.trim(),
+      `${facName} 저수지`,
+    ].filter((q, i, arr) => q.length >= 2 && arr.indexOf(q) === i);
+
+    for (const query of queries) {
+      const hit = await this.geocodeKeyword(query);
+      if (hit) {
+        this.geocodeCache.set(cacheKey, hit);
+        return hit;
+      }
+    }
+    return null;
+  }
+
+  async geocodeKeyword(query: string): Promise<{ lat: number; lng: number } | null> {
+    const results = await this.searchKakao(query);
+    const first = results[0];
+    if (!first) return null;
+    return { lat: first.lat, lng: first.lng };
   }
 
   private defaultRegionAnchor(): RegionAnchorResult {

@@ -1,5 +1,7 @@
 'use client';
 
+import { Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/layout/PageHeader';
 import WeatherExplorer from '@/components/weather/WeatherExplorer';
 import WeatherLocationBar from '@/components/weather/WeatherLocationBar';
@@ -7,14 +9,36 @@ import { WeatherPageSkeleton } from '@/components/weather/WeatherSkeleton';
 import { useWeather, useWeatherLocation } from '@/hooks/useWeather';
 
 export default function WeatherPage() {
+  return (
+    <Suspense fallback={<WeatherPageSkeleton />}>
+      <WeatherPageContent />
+    </Suspense>
+  );
+}
+
+function WeatherPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { location, setLocation, requestGps, gpsLoading, gpsError } = useWeatherLocation();
   const { weather, loading, fetching, error } = useWeather(location);
+
+  useEffect(() => {
+    if (searchParams.get('fresh') === '1') {
+      const view = searchParams.get('view');
+      const q = searchParams.get('q');
+      const params = new URLSearchParams();
+      if (view) params.set('view', view);
+      if (q) params.set('q', q);
+      const suffix = params.toString() ? `?${params.toString()}` : '';
+      router.replace(`/conditions${suffix}`);
+    }
+  }, [searchParams, router]);
 
   return (
     <main>
       <PageHeader
         title="낚시 날씨"
-        description="출조 판단 · 시간별 예보 · 물때"
+        description="기온 · 바람 · 강수 · 시간별 예보"
       />
 
       <div className="site-container site-page-body weather-page">
@@ -54,7 +78,7 @@ export default function WeatherPage() {
                 {weather.forecastNotice}
               </div>
             )}
-            <WeatherExplorer weather={weather} />
+            <WeatherExplorer weather={weather} location={location} />
           </>
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { WeatherData } from '@/lib/weather';
+import type { WeatherLocation } from '@/lib/weather';
 import { dayTabLabel, isToday, skyEmoji } from '@/lib/weather';
 import WeatherCharts from './WeatherCharts';
 import WeatherFishingBar from './WeatherFishingBar';
@@ -11,9 +12,10 @@ import WeatherWeekRow from './WeatherWeekRow';
 
 type Props = {
   weather: WeatherData;
+  location: WeatherLocation;
 };
 
-export default function WeatherExplorer({ weather }: Props) {
+export default function WeatherExplorer({ weather, location }: Props) {
   const defaultDate = weather.days[0]?.date ?? '';
   const defaultHour = weather.days[0]?.slots.find((s) => s.isCurrent)?.hour
     ?? weather.days[0]?.slots.find((s) => s.hasForecast !== false)?.hour
@@ -97,6 +99,10 @@ export default function WeatherExplorer({ weather }: Props) {
         onSelectDate={handleDateChange}
       />
 
+      <p className="weather-conditions-link">
+        물때·저수지 수위는 <a href="/conditions">출조 · 수위</a>에서 확인하세요.
+      </p>
+
       <details className="weather-tech-details">
         <summary>{dayTabLabel(selectedDay)} 상세 시간표</summary>
         <div className="weather-table-wrap">
@@ -130,7 +136,7 @@ export default function WeatherExplorer({ weather }: Props) {
           </table>
         </div>
         <p className="weather-tech-note">
-          물때·조석은 음력 기반 근사치입니다.
+          상세 시간표의 낚시지수는 기상 기반입니다. 물때·조석은 출조 · 수위 페이지를 이용하세요.
           {isToday(selectedDay.date) ? ` · 실황 ${weather.current.observedAt}` : ''}
         </p>
       </details>

@@ -52,8 +52,8 @@ export default function WeatherWidget({
 
   if (compact) {
     return (
-      <Link href="/weather" className="weather-mini-link">
-        <div className="weather-mini">
+      <div className="weather-mini">
+        <Link href="/weather" className="weather-mini-link">
           <span className="weather-mini-emoji">{emoji}</span>
           <div className="weather-mini-body">
             <div className="weather-mini-temp">{current.temp}°C · {current.skyLabel}</div>
@@ -63,8 +63,11 @@ export default function WeatherWidget({
             </div>
           </div>
           <span className="weather-mini-arrow">→</span>
-        </div>
-      </Link>
+        </Link>
+        <Link href="/conditions" className="weather-mini-marine">
+          🌊 출조 · 수위 보기
+        </Link>
+      </div>
     );
   }
 
@@ -94,9 +97,14 @@ export default function WeatherWidget({
       </div>
       <div className="weather-widget-source">출처: 기상청 · {fishingStars(fishingCondition.score)}</div>
       {showDetailLink && (
-        <Link href="/weather" className="weather-widget-detail-link">
-          시간별 예보 보기 →
-        </Link>
+        <div className="weather-widget-links">
+          <Link href="/weather" className="weather-widget-detail-link">
+            시간별 예보 →
+          </Link>
+          <Link href="/conditions" className="weather-widget-detail-link">
+            출조 · 수위 →
+          </Link>
+        </div>
       )}
     </div>
   );

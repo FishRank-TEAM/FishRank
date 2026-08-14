@@ -32,6 +32,22 @@ export default function FishingInfoPage() {
         <div>
           <section className="info-section">
             <div className="info-section-head">
+              <h2 className="info-section-title">🏞 저수지 수위</h2>
+              <Link href="/conditions?view=map" className="site-btn-sm">
+                지도에서 보기 →
+              </Link>
+            </div>
+            <p className="info-tip-card-desc" style={{ margin: '0 0 12px' }}>
+              전국 어디서나 시·군·구 기준으로 저수지 저수율·수위를 지도 또는 목록으로 확인할 수 있습니다.
+            </p>
+            <div className="info-callout">
+              💡 <Link href="/conditions">출조 · 수위</Link> 페이지에서 구미·충주·여주 등 권역을 검색하거나
+              위치를 선택해 보세요.
+            </div>
+          </section>
+
+          <section className="info-section">
+            <div className="info-section-head">
               <h2 className="info-section-title">🪢 낚시 매듭 가이드</h2>
               <Link href="/fishing-info/knots" className="site-btn-sm">
                 전체 {KNOTS.length}개 보기 →
@@ -89,6 +105,7 @@ export default function FishingInfoPage() {
             <h4 className="sidebar-card-title">빠른 링크</h4>
             {[
               { href: '/weather', label: '🌤 날씨 상세 보기' },
+              { href: '/conditions?view=map', label: '🏞 저수지 수위 지도' },
               { href: '/encyclopedia', label: '🐟 어종 사전 보기' },
               { href: '/ranking', label: '🏆 랭킹 확인' },
               { href: '/tournament', label: '🏅 대회 참가' },
