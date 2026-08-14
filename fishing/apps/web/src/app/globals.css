@@ -6692,13 +6692,17 @@ h3 { font-size: 16px; font-weight: 700; }
 
 .weather-mini-link {
   text-decoration: none;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
 }
 
 .weather-mini {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
   padding: 12px 14px;
   background: var(--ocean-light);
   border: 1px solid var(--border);
@@ -6729,6 +6733,20 @@ h3 { font-size: 16px; font-weight: 700; }
   font-size: 11px;
   color: var(--text-sub);
   margin-top: 2px;
+}
+
+.weather-mini-marine {
+  font-size: 11px;
+  color: var(--ocean-deep);
+  margin-top: 0;
+  padding-left: 2px;
+  line-height: 1.35;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.weather-mini-marine:hover {
+  color: var(--ocean-bright);
 }
 
 .weather-mini-arrow {
@@ -7136,6 +7154,481 @@ h3 { font-size: 16px; font-weight: 700; }
   font-size: 10px;
   color: var(--text-muted);
   line-height: 1.4;
+}
+
+.weather-marine-panel {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.weather-marine-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ocean-deep);
+}
+
+.weather-marine-title.freshwater {
+  margin-top: 6px;
+}
+
+.weather-marine-card {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.weather-marine-card.freshwater {
+  border-color: #a5d6a7;
+  background: #f1f8e9;
+}
+
+.weather-marine-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ocean-deep);
+}
+
+.weather-marine-card-head em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.weather-marine-fish-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weather-marine-fish-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.weather-marine-fish-list strong {
+  min-width: 56px;
+}
+
+.weather-marine-index {
+  font-weight: 800;
+}
+
+.weather-marine-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.weather-marine-tide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+}
+
+.weather-marine-tide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.weather-marine-tide.high {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.weather-marine-tide.low {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.weather-marine-tide em {
+  font-style: normal;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.weather-marine-tide-series {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+}
+
+.weather-marine-tide-series li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--ocean-light);
+  font-size: 11px;
+}
+
+.weather-marine-reservoir-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.weather-marine-reservoir-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.weather-marine-reservoir-stats span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.weather-marine-reservoir-stats strong {
+  font-size: 20px;
+  color: #2e7d32;
+}
+
+.weather-marine-muted {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.weather-marine-source {
+  margin: 10px 0 0;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.weather-conditions-link {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--ocean-light);
+  font-size: 13px;
+  color: var(--ocean-deep);
+}
+
+.weather-conditions-link a {
+  font-weight: 700;
+  color: var(--ocean-bright);
+}
+
+.conditions-explorer {
+  margin-top: 12px;
+}
+
+.conditions-explorer-note {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.conditions-explorer-note a {
+  font-weight: 700;
+  color: var(--ocean-bright);
+}
+
+.conditions-county-search {
+  margin: 12px 0 16px;
+}
+
+.conditions-county-search label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ocean-deep);
+  margin-bottom: 6px;
+}
+
+.conditions-county-search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.conditions-county-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.weather-widget-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.reservoir-explorer {
+  margin-top: 16px;
+}
+
+.reservoir-explorer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.reservoir-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.reservoir-view-toggle button {
+  border: none;
+  background: var(--surface);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.reservoir-view-toggle button.active {
+  background: var(--ocean-deep);
+  color: #fff;
+}
+
+.reservoir-explorer-body {
+  padding: 0;
+  overflow: hidden;
+}
+
+.reservoir-map-wrap {
+  position: relative;
+}
+
+.reservoir-map-canvas {
+  width: 100%;
+  height: 320px;
+  background: #e8f4f8;
+}
+
+.reservoir-map-fallback {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: #f5f5f5;
+}
+
+.reservoir-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  background: #fafafa;
+}
+
+.reservoir-map-legend .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.reservoir-map-legend .dot.high { background: #2563eb; }
+.reservoir-map-legend .dot.mid { background: #f59e0b; }
+.reservoir-map-legend .dot.low { background: #dc2626; }
+
+.reservoir-map-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 800;
+  font-size: 11px;
+  line-height: 1;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.reservoir-table-wrap {
+  overflow-x: auto;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.reservoir-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.reservoir-table th,
+.reservoir-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.reservoir-table th {
+  position: sticky;
+  top: 0;
+  background: #f1f8e9;
+  font-size: 11px;
+  color: var(--text-muted);
+  z-index: 1;
+}
+
+.reservoir-table tbody tr {
+  cursor: pointer;
+}
+
+.reservoir-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.reservoir-table tbody tr.selected {
+  background: #e3f2fd;
+}
+
+.reservoir-sort-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.reservoir-detail-panel {
+  padding: 14px 16px;
+  border-top: 1px solid #a5d6a7;
+  background: #f9fdf7;
+}
+
+.reservoir-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--ocean-deep);
+}
+
+.reservoir-detail-head em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.reservoir-map-jump {
+  margin-top: 8px;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ocean-bright);
+  cursor: pointer;
+}
+
+.reservoir-skeleton-map-canvas {
+  position: relative;
+  height: 320px;
+  background: linear-gradient(180deg, #e8f4f8 0%, #dceef5 100%);
+  overflow: hidden;
+}
+
+.reservoir-skeleton-bubble {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.reservoir-skeleton-legend {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: #fafafa;
+}
+
+.reservoir-skeleton-legend-item {
+  width: 72px;
+  height: 12px;
+}
+
+.reservoir-skeleton-table {
+  padding: 8px 12px;
+  max-height: 320px;
+}
+
+.reservoir-skeleton-table-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.6fr;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.reservoir-skeleton-cell {
+  height: 14px;
+}
+
+.reservoir-skeleton-cell.wide {
+  width: 85%;
+}
+
+.reservoir-skeleton-cell.short {
+  width: 55%;
+}
+
+.reservoir-skeleton-detail {
+  pointer-events: none;
+}
+
+.reservoir-skeleton-detail-title {
+  width: 45%;
+  height: 16px;
+  margin-bottom: 12px;
+}
+
+.reservoir-skeleton-detail-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.reservoir-skeleton-stat {
+  height: 36px;
 }
 
 .weather-tech-details {

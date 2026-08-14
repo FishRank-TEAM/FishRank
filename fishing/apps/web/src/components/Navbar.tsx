@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: '/community', label: '커뮤니티' },
   { href: '/encyclopedia', label: '어종 사전' },
   { href: '/weather', label: '날씨' },
+  { href: '/conditions', label: '출조·수위' },
   { href: '/fishing-info', label: '낚시 정보' },
 ];
 
