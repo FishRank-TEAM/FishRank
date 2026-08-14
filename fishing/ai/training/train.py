@@ -34,6 +34,18 @@ def main() -> None:
         action="store_true",
         help="기존 체크포인트 무시하고 처음부터 학습",
     )
+    parser.add_argument(
+        "--cache",
+        choices=("off", "ram", "disk"),
+        default="ram",
+        help="이미지 캐시 (ram=전체 dataset 메모리 적재, 16GB+ 여유 RAM 권장)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=8,
+        help="DataLoader 워커 수 (RAM·CPU 코어에 맞게 8~16)",
+    )
     args = parser.parse_args()
 
     data_dir = args.data.resolve()
@@ -64,6 +76,15 @@ def main() -> None:
     else:
         model = YOLO(args.base_model)
         print(f"새 학습: {args.base_model}")
+
+    cache = False if args.cache == "off" else args.cache
+    if cache == "ram":
+        print(
+            "참고: YOLO 분류(classify)는 Ultralytics 버그로 cache_ram 이 자동 비활성화됩니다.\n"
+            "      RAM 캐시·workers 증가 효과 없음 → GPU(5070) 학습 권장."
+        )
+    print(f"캐시 요청: {cache}, workers: {args.workers}")
+
     results = model.train(
         data=str(data_dir),
         epochs=args.epochs,
@@ -77,6 +98,8 @@ def main() -> None:
         patience=10,
         save=True,
         verbose=True,
+        cache=cache,
+        workers=args.workers,
         # 분류 모델 augmentation
         hsv_h=0.02,
         hsv_s=0.6,

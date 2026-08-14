@@ -24,6 +24,13 @@ def main() -> None:
     parser.add_argument("--base-model", type=str, default="yolov8s-cls.pt")
     parser.add_argument("--resume", action="store_true", help="checkpoint/last.pt 에서 재개")
     parser.add_argument("--fresh", action="store_true", help="체크포인트 무시하고 새로 시작")
+    parser.add_argument(
+        "--cache",
+        choices=("off", "ram", "disk"),
+        default="ram",
+        help="이미지 RAM 캐시 (dataset ~3GB → 55GB RAM 에 여유)",
+    )
+    parser.add_argument("--workers", type=int, default=12, help="DataLoader 워커 (RAM 많으면 12~16)")
     args = parser.parse_args()
 
     data_dir = args.data.resolve()
@@ -82,6 +89,9 @@ def main() -> None:
     print(f"데이터: {data_dir} ({class_count} classes)")
     print(f"epochs={args.epochs}, batch={args.batch}, device={args.device}, imgsz={args.imgsz}\n")
 
+    cache = False if args.cache == "off" else args.cache
+    print(f"캐시: {cache}, workers: {args.workers}")
+
     results = model.train(
         data=str(data_dir),
         epochs=args.epochs,
@@ -95,7 +105,8 @@ def main() -> None:
         patience=10,
         save=True,
         verbose=True,
-        workers=8,
+        cache=cache,
+        workers=args.workers,
         hsv_h=0.02,
         hsv_s=0.6,
         hsv_v=0.4,

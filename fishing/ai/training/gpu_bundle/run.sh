@@ -19,7 +19,7 @@ else
 fi
 
 echo "[3/3] 학습 시작..."
-python train.py --device 0 --batch 64 --epochs 50 "$@"
+python train.py --device 0 --batch 64 --epochs 50 --cache ram --workers 12 "$@"
 
 if [[ -f export/best.pt ]]; then
   echo "학습 완료. best.pt = export/best.pt"

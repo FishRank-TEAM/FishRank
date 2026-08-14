@@ -19,7 +19,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 echo [3/3] 학습 시작...
-python train.py --device 0 --batch 64 --epochs 50 %*
+python train.py --device 0 --batch 64 --epochs 50 --cache ram --workers 12 %*
 
 echo.
 if exist "export\best.pt" (
