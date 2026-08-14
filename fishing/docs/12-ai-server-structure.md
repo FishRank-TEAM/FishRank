@@ -14,13 +14,13 @@
 [NestJS] apps/api — CatchesService.createCertified()
       │  ① 이미지 저장 (uploads/)
       │  ② catch 레코드 생성 (status: pending)
-      │  ③ AiService → FastAPI 호출
+      │  ③ AiService → FastAPI 호출 (동기)
       ▼
 [FastAPI] ai/ — POST /analyze
       │  ① 촬영 규칙 4가지 검증
       │  ② 줄자 눈금 인식 (OpenCV)
-      │  ③ 어종 분류 (HSV 색상 프로파일)
-      │  ④ 길이(cm) 계산
+      │  ③ 어종 분류 (YOLO → CLIP → HSV fallback)
+      │  ④ 길이(cm) 계산 + 등급 참고값
       ▼
 [NestJS] 결과 반영
       │  determineGrade() → S / A / B
@@ -48,7 +48,11 @@ fishing/
 │       ├── analyzer.py              # 분석 오케스트레이터 (진입점)
 │       ├── ruler.py                 # 줄자 검출 + 길이 계산 (OpenCV)
 │       ├── rules.py                 # 촬영 규칙 4가지 검증
-│       ├── species.py               # 어종 분류 (HSV 프로파일)
+│       ├── species.py               # 어종 분류 오케스트레이션
+│       ├── species_yolo.py          # YOLOv8-cls (주 분류기)
+│       ├── species_clip.py          # CLIP fallback
+│       ├── species_hsv.py           # HSV 색상 fallback
+│       ├── species_catalog.py       # 종 카탈로그
 │       └── grade.py                 # 등급 판정 (S/A/B)
 │
 ├── apps/
@@ -81,7 +85,10 @@ fishing/
 | `analyzer.py` | 이미지 경로 해석 → ruler → rules → species → grade 순서로 파이프라인 실행 |
 | `ruler.py` | Hough Line으로 줄자 탐지, 눈금 간격으로 px/cm 환산, 물고기 bbox 기반 길이 산출 |
 | `rules.py` | 촬영 규칙 4가지: 바닥 배치, 수직 촬영, 줄자 포함, 머리·꼬리 전체 |
-| `species.py` | 물고기 ROI 추출 후 HSV 색상 프로파일 매칭으로 어종 slug 반환 |
+| `species.py` | 어종 분류 진입 — YOLO → CLIP → HSV 순 fallback |
+| `species_yolo.py` | fine-tuned YOLOv8-cls 추론 (주 경로) |
+| `species_clip.py` | CLIP 기반 광범위 종 매칭 fallback |
+| `species_hsv.py` | HSV 색상 프로파일 (최후 fallback) |
 | `grade.py` | AI 서버 측 등급 참고값 산출 (최종 판정은 NestJS에서 재계산) |
 | `auth.py` | `X-Internal-Secret` 헤더로 내부 통신 인증 |
 
@@ -245,14 +252,15 @@ npm run dev
 
 ## 현재 구현 vs 향후 계획
 
-| 항목 | 현재 (MVP) | 향후 |
+| 항목 | 현재 (2026-08) | 향후 |
 |---|---|---|
 | AI 프레임워크 | FastAPI + OpenCV | 동일 |
-| 어종 분류 | HSV 색상 프로파일 | **YOLOv8n-cls fine-tuned** (38종) → CLIP fallback |
+| 어종 분류 | **YOLOv8-cls** (+ CLIP / HSV fallback) | 정확도 목표 top-1 **80%**, 데이터셋 확대 |
 | 줄자 인식 | OpenCV Hough Line + 눈금 | 동일 (정확도 개선) |
 | 처리 방식 | 동기 (업로드 요청 내 완료) | BullMQ 비동기 큐 |
 | 이미지 저장 | 로컬 `uploads/` | AWS S3 |
 | AI 서버 인증 | Shared secret 헤더 | VPC 내부망 + secret |
+| 학습 파이프라인 | crawl / dataset / train / eval (`npm run ai:*`) | GPU 학습·정기 재학습 |
 
 ---
 
