@@ -8,9 +8,10 @@ type Props = {
   day: WeatherDay;
   slot: WeatherSlot;
   bestTimes: { hour: number; hourLabel: string; label: string }[];
+  onJumpToHour?: (hour: number) => void;
 };
 
-export default function WeatherNowCard({ day, slot, bestTimes }: Props) {
+export default function WeatherNowCard({ day, slot, bestTimes, onJumpToHour }: Props) {
   const emoji = skyEmoji(slot.sky, slot.precipitationType);
   const pop = slot.precipitationProb ?? day.maxPrecipProb;
   const verdict = tripVerdict(slot.fishingCondition.score, slot.windSpeed, pop);
@@ -72,9 +73,20 @@ export default function WeatherNowCard({ day, slot, bestTimes }: Props) {
 
       {bestTimes.length > 0 && (
         <div className="weather-g-best">
-          <span>🎣 추천 시간</span>
+          <span>추천 시간</span>
           {bestTimes.map((t) => (
-            <span key={t.hour} className="weather-g-best-chip">{t.hourLabel} · {t.label}</span>
+            onJumpToHour ? (
+              <button
+                key={t.hour}
+                type="button"
+                className="weather-g-best-chip weather-g-best-chip-btn"
+                onClick={() => onJumpToHour(t.hour)}
+              >
+                {t.hourLabel} · {t.label}
+              </button>
+            ) : (
+              <span key={t.hour} className="weather-g-best-chip">{t.hourLabel} · {t.label}</span>
+            )
           ))}
         </div>
       )}

@@ -17,8 +17,10 @@ export type ReservoirAreaRow = {
 };
 
 const RESERVOIR_LIST_LIMIT = 50;
-const RESERVOIR_MAP_ENRICH_LIMIT = 8;
-const RESERVOIR_AREA_DEADLINE_MS = 2000;
+/** 지도 마커용 지오코딩 대상 수 — 너무 크면 공공API 한도에 걸림 */
+const RESERVOIR_MAP_ENRICH_LIMIT = 20;
+const RESERVOIR_AREA_DEADLINE_MS = 9000;
+const GEOCODE_CONCURRENCY = 4;
 
 @Injectable()
 export class MarineConditionsService {
@@ -123,27 +125,36 @@ export class MarineConditionsService {
 
     try {
       const deadline = Date.now() + RESERVOIR_AREA_DEADLINE_MS;
-      const codes = await this.withTimeout(
-        this.searchReservoirCandidates(search),
-        900,
-        [],
-      );
+      const bias = { lat, lng };
+
+      // KRC 목록 + 카카오 주변 저수지 POI를 병렬로 (지도에 물이 보이는데 마커가 비는 경우 보강)
+      const [codes, kakaoNearby] = await Promise.all([
+        this.withTimeout(this.searchReservoirCandidates(search), 2500, []),
+        this.withTimeout(this.geocode.searchNearbyReservoirs(lat, lng, 15000), 3500, []),
+      ]);
+
       const candidates = this.rankReservoirCandidates(codes, search.nameHint, search.regionHint)
         .slice(0, RESERVOIR_LIST_LIMIT);
       const enriched = await this.buildReservoirAreaRows(
         candidates.slice(0, RESERVOIR_MAP_ENRICH_LIMIT),
         deadline,
+        bias,
       );
       const enrichedMap = new Map(enriched.map((row) => [row.facCode, row]));
       const rows = candidates.map(
         (code) => enrichedMap.get(code.facCode) ?? this.stubReservoirRow(code),
       );
+
+      this.mergeKakaoNearbyReservoirs(rows, kakaoNearby, candidates);
+
+      rows.sort((a, b) => Number(b.geocoded) - Number(a.geocoded));
       return {
-        source: 'KRC 농촌용수 저수지 (data.go.kr 15099919)',
+        source: 'KRC 농촌용수 저수지 + 카카오 주변 저수지',
         spot: search.spotLabel,
         searchQuery: search.query,
         center: { lat, lng },
-        totalCount: candidates.length,
+        totalCount: rows.length,
+        geocodedCount: rows.filter((r) => r.geocoded).length,
         rows,
       };
     } catch (err) {
@@ -151,6 +162,70 @@ export class MarineConditionsService {
         throw new ServiceUnavailableException(err.message);
       }
       throw err;
+    }
+  }
+
+  /** 카카오 지도 POI로 좌표 없는 KRC 행을 채우고, 매칭 안 되면 새 마커로 추가 */
+  private mergeKakaoNearbyReservoirs(
+    rows: ReservoirAreaRow[],
+    kakaoNearby: Array<{ id: string; name: string; address: string; lat: number; lng: number }>,
+    candidates: ReservoirCode[],
+  ) {
+    if (!kakaoNearby.length) return;
+
+    const normalize = (s: string) =>
+      s.replace(/\s+/g, '').replace(/(저수지|저수면|저류지|유수지|배수지|댐|호수)$/g, '');
+
+    const usedKakao = new Set<string>();
+
+    // 1) 아직 좌표 없는 KRC 행에 이름 비슷한 카카오 POI 좌표 부여
+    for (const row of rows) {
+      if (row.geocoded) continue;
+      const base = normalize(row.facName);
+      if (base.length < 2) continue;
+      const hit = kakaoNearby.find((k) => {
+        if (usedKakao.has(k.id)) return false;
+        const kn = normalize(k.name);
+        return kn.includes(base) || base.includes(kn) || k.name.includes(row.facName);
+      });
+      if (!hit) continue;
+      row.lat = hit.lat;
+      row.lng = hit.lng;
+      row.geocoded = true;
+      usedKakao.add(hit.id);
+    }
+
+    // 2) 기존 마커와 멀리 떨어진 카카오 저수지는 추가 (지도에만 있는 소규모 저수지)
+    const nearExisting = (lat: number, lng: number) =>
+      rows.some(
+        (r) =>
+          r.geocoded
+          && Math.abs(r.lat - lat) < 0.004
+          && Math.abs(r.lng - lng) < 0.004,
+      );
+
+    const candidateNames = new Set(candidates.map((c) => normalize(c.facName)));
+
+    for (const k of kakaoNearby) {
+      if (usedKakao.has(k.id)) continue;
+      if (nearExisting(k.lat, k.lng)) continue;
+      const kn = normalize(k.name);
+      // 이미 KRC 목록에 이름만 있는 경우 stub를 좌표만 채운 것으로 충분
+      if (candidateNames.has(kn) && rows.some((r) => normalize(r.facName) === kn && r.geocoded)) {
+        continue;
+      }
+      rows.push({
+        facCode: k.id,
+        facName: k.name,
+        county: k.address || null,
+        ratePercent: null,
+        waterLevelM: null,
+        checkDate: null,
+        lat: k.lat,
+        lng: k.lng,
+        geocoded: true,
+      });
+      usedKakao.add(k.id);
     }
   }
 
@@ -264,42 +339,53 @@ export class MarineConditionsService {
   private async buildReservoirAreaRows(
     candidates: ReservoirCode[],
     deadline: number,
+    bias?: { lat: number; lng: number },
   ): Promise<ReservoirAreaRow[]> {
-    const limited = candidates;
     const remainingMs = () => Math.max(0, deadline - Date.now());
-    if (remainingMs() <= 0) return [];
+    if (remainingMs() <= 0) {
+      return candidates.map((c) => this.stubReservoirRow(c));
+    }
 
-    const settled = await Promise.allSettled(
-      limited.map((candidate) =>
-        this.withTimeout(
-          this.buildOneReservoirRow(candidate),
-          Math.min(900, remainingMs()),
-          null,
+    // 동시 요청을 제한해 카카오·공공데이터 한도(코드 16) 폭주를 줄임
+    const results: ReservoirAreaRow[] = [];
+    for (let i = 0; i < candidates.length; i += GEOCODE_CONCURRENCY) {
+      if (remainingMs() <= 200) {
+        for (const left of candidates.slice(i)) {
+          results.push(this.stubReservoirRow(left));
+        }
+        break;
+      }
+      const chunk = candidates.slice(i, i + GEOCODE_CONCURRENCY);
+      const settled = await Promise.all(
+        chunk.map((candidate) =>
+          this.withTimeout(
+            this.buildOneReservoirRow(candidate, bias),
+            Math.min(2500, Math.max(1200, remainingMs())),
+            this.stubReservoirRow(candidate),
+          ),
         ),
-      ),
-    );
-
-    return settled
-      .filter((s): s is PromiseFulfilledResult<ReservoirAreaRow | null> => s.status === 'fulfilled')
-      .map((s) => s.value)
-      .filter((row): row is ReservoirAreaRow => row != null);
+      );
+      results.push(...settled);
+    }
+    return results;
   }
 
   private async buildOneReservoirRow(
     candidate: ReservoirCode,
-  ): Promise<ReservoirAreaRow | null> {
-    const [levels, coord] = await Promise.all([
-      this.withTimeout(
-        this.reservoir.getWaterLevels({ facCode: candidate.facCode, latestOnly: true }),
-        700,
-        [],
-      ),
-      this.withTimeout(
-        this.geocode.geocodeReservoir(candidate.facName, candidate.county),
-        700,
-        null,
-      ),
-    ]);
+    bias?: { lat: number; lng: number },
+  ): Promise<ReservoirAreaRow> {
+    // 지도 표시는 좌표가 핵심 — 수위는 실패해도 마커는 유지
+    const coord = await this.withTimeout(
+      this.geocode.geocodeReservoir(candidate.facName, candidate.county, bias),
+      2000,
+      null,
+    );
+
+    const levels = await this.withTimeout(
+      this.reservoir.getWaterLevels({ facCode: candidate.facCode, latestOnly: true }),
+      900,
+      [],
+    );
 
     const latest = levels.at(-1);
     const lat = coord?.lat ?? 0;

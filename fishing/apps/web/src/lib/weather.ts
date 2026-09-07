@@ -97,6 +97,7 @@ export type PlaceResult = {
   lat: number;
   lng: number;
   source: 'preset' | 'kakao';
+  spotType?: 'sea' | 'fresh' | 'mixed';
 };
 
 export type WeatherData = {

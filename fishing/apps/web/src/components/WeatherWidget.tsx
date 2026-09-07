@@ -35,9 +35,7 @@ export default function WeatherWidget({
     return (
       <div className="weather-widget weather-widget-error">
         <p className="weather-widget-loading">{error}</p>
-        {error.includes('KMA_SERVICE_KEY') && (
-          <p className="weather-widget-hint">기상청 API허브에서 인증키 발급 후 api/.env에 설정하세요.</p>
-        )}
+        <p className="weather-widget-hint">잠시 후 다시 시도해 주세요.</p>
       </div>
     );
   }
@@ -65,7 +63,7 @@ export default function WeatherWidget({
           <span className="weather-mini-arrow">→</span>
         </Link>
         <Link href="/conditions" className="weather-mini-marine">
-          🌊 출조 · 수위 보기
+          🎣 출조 · 포인트 보기
         </Link>
       </div>
     );
@@ -102,7 +100,7 @@ export default function WeatherWidget({
             시간별 예보 →
           </Link>
           <Link href="/conditions" className="weather-widget-detail-link">
-            출조 · 수위 →
+            출조 · 포인트 →
           </Link>
         </div>
       )}

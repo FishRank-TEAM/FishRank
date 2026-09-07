@@ -1,3 +1,5 @@
+export type SeaFishingGubun = '갯바위' | '선상';
+
 export type SeaFishingIndexRow = {
   placeName: string | null;
   fishName: string | null;
@@ -102,14 +104,40 @@ function formatTideClock(forecastAt: string): string {
   return forecastAt;
 }
 
-export function fishingIndexSummary(rows: SeaFishingIndexRow[]): string | null {
+export function pickPrimaryFish(rows: SeaFishingIndexRow[]): SeaFishingIndexRow | null {
   if (!rows.length) return null;
-  const top = rows.find((r) => r.fishName && r.fishName !== '기타어종') ?? rows[0];
+  return rows.find((r) => r.fishName && r.fishName !== '기타어종') ?? rows[0];
+}
+
+export function fishingIndexSummary(rows: SeaFishingIndexRow[]): string | null {
+  const top = pickPrimaryFish(rows);
+  if (!top) return null;
   const place = top.placeName ?? '연안';
   const fish = top.fishName ?? '어종';
   const idx = top.fishingIndexLabel ?? '-';
   return `${place} · ${fish} ${idx}`;
 }
+
+/** HH:mm 기준 오늘 남은 물때 중 가장 가까운 이벤트 */
+export function findNextTideEvent(events: TideEventKhoa[], now = new Date()): TideEventKhoa | null {
+  if (!events.length) return null;
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  let best: TideEventKhoa | null = null;
+  let bestDelta = Infinity;
+  for (const ev of events) {
+    const m = ev.time.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) continue;
+    const mins = Number(m[1]) * 60 + Number(m[2]);
+    const delta = mins >= minutesNow ? mins - minutesNow : mins + 24 * 60 - minutesNow;
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      best = ev;
+    }
+  }
+  return best ?? events[0];
+}
+
+export type ConditionsMode = 'sea' | 'fresh';
 
 export function indexLabelColor(label: string | null): string {
   if (!label) return '#6b7280';

@@ -65,23 +65,31 @@ export class PostsService {
   }
 
   async findById(id: string) {
-    const post = await this.prisma.post.update({
+    const existing = await this.prisma.post.findFirst({
       where: { id, deletedAt: null },
-      data: { viewCount: { increment: 1 } },
-      include: {
-        user: { select: { id: true, nickname: true, profileImage: true } },
-        comments: {
-          where: { deletedAt: null },
-          include: {
-            user: { select: { id: true, nickname: true, profileImage: true } },
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-        _count: { select: { comments: true } },
-      },
+      select: { id: true },
     });
-    if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
-    return post;
+    if (!existing) throw new NotFoundException('게시글을 찾을 수 없습니다.');
+
+    try {
+      return await this.prisma.post.update({
+        where: { id },
+        data: { viewCount: { increment: 1 } },
+        include: {
+          user: { select: { id: true, nickname: true, profileImage: true } },
+          comments: {
+            where: { deletedAt: null },
+            include: {
+              user: { select: { id: true, nickname: true, profileImage: true } },
+            },
+            orderBy: { createdAt: 'asc' },
+          },
+          _count: { select: { comments: true } },
+        },
+      });
+    } catch {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
   }
 
   async addComment(postId: string, userId: string, content: string) {
@@ -97,7 +105,7 @@ export class PostsService {
   }
 
   async delete(id: string, userId: string) {
-    const post = await this.prisma.post.findUnique({ where: { id } });
+    const post = await this.prisma.post.findFirst({ where: { id, deletedAt: null } });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
     if (post.userId !== userId) throw new ForbiddenException('삭제 권한이 없습니다.');
 

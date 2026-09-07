@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { WeatherData } from '@/lib/weather';
-import type { WeatherLocation } from '@/lib/weather';
+import Link from 'next/link';
+import type { WeatherData, WeatherLocation } from '@/lib/weather';
 import { dayTabLabel, isToday, skyEmoji } from '@/lib/weather';
 import WeatherCharts from './WeatherCharts';
 import WeatherFishingBar from './WeatherFishingBar';
 import WeatherNowCard from './WeatherNowCard';
-import WeatherShortForecast from './WeatherShortForecast';
 import WeatherWeekRow from './WeatherWeekRow';
 
 type Props = {
@@ -27,7 +26,7 @@ export default function WeatherExplorer({ weather, location }: Props) {
   useEffect(() => {
     setSelectedDate(defaultDate);
     setSelectedHour(defaultHour);
-  }, [defaultDate, defaultHour]);
+  }, [defaultDate, defaultHour, location.lat, location.lng]);
 
   const selectedDay = useMemo(
     () => weather.days.find((d) => d.date === selectedDate) ?? weather.days[0],
@@ -75,6 +74,7 @@ export default function WeatherExplorer({ weather, location }: Props) {
         day={selectedDay}
         slot={selectedSlot}
         bestTimes={bestTimes}
+        onJumpToHour={setSelectedHour}
       />
 
       <WeatherFishingBar day={selectedDay} onJumpToHour={setSelectedHour} />
@@ -85,13 +85,6 @@ export default function WeatherExplorer({ weather, location }: Props) {
         onHourChange={setSelectedHour}
       />
 
-      <WeatherShortForecast
-        days={weather.days}
-        selectedDate={selectedDate}
-        currentTemp={weather.current.temp}
-        onSelectDate={handleDateChange}
-      />
-
       <WeatherWeekRow
         days={weather.days}
         selectedDate={selectedDate}
@@ -100,7 +93,7 @@ export default function WeatherExplorer({ weather, location }: Props) {
       />
 
       <p className="weather-conditions-link">
-        물때·저수지 수위는 <a href="/conditions">출조 · 수위</a>에서 확인하세요.
+        낚시 포인트·물때·저수지 수위는 <Link href="/conditions">출조</Link>에서 확인하세요.
       </p>
 
       <details className="weather-tech-details">
@@ -122,7 +115,16 @@ export default function WeatherExplorer({ weather, location }: Props) {
                 <tr
                   key={slot.time}
                   className={selectedHour === slot.hour ? 'selected' : undefined}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={selectedHour === slot.hour}
                   onClick={() => setSelectedHour(slot.hour)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedHour(slot.hour);
+                    }
+                  }}
                 >
                   <td>{slot.hourLabel}{slot.isCurrent ? ' · 현재' : ''}</td>
                   <td>{skyEmoji(slot.sky, slot.precipitationType)} {slot.skyLabel}</td>
@@ -136,7 +138,8 @@ export default function WeatherExplorer({ weather, location }: Props) {
           </table>
         </div>
         <p className="weather-tech-note">
-          상세 시간표의 낚시지수는 기상 기반입니다. 물때·조석은 출조 · 수위 페이지를 이용하세요.
+          상세 시간표의 낚시지수는 기상 기반입니다. 물때·저수지 수위는{' '}
+          <Link href="/conditions">출조</Link>에서 확인할 수 있습니다.
           {isToday(selectedDay.date) ? ` · 실황 ${weather.current.observedAt}` : ''}
         </p>
       </details>

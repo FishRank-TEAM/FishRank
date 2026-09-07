@@ -112,18 +112,25 @@ export function useWeather(location: WeatherLocation, enabled = true) {
     retry: 1,
   });
 
-  const msg = query.error
+  const rawMsg = query.error
     ? (query.error as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message
     : undefined;
+  const detail = rawMsg
+    ? (Array.isArray(rawMsg) ? rawMsg.join(', ') : rawMsg)
+    : '';
+
+  // 사용자에게는 기술 세부(키 설정 등)를 숨기고 친화적 메시지만 노출
+  const isConfigError = /KMA_SERVICE_KEY|인증|service.?key|API.?키/i.test(detail);
 
   return {
     weather: query.data ?? null,
     loading: query.isLoading,
     fetching: query.isFetching,
-    error: msg
-      ? (Array.isArray(msg) ? msg.join(', ') : msg)
-      : query.isError
-        ? '날씨 정보를 가져올 수 없습니다'
-        : '',
+    error: query.isError
+      ? (isConfigError
+        ? '날씨 서비스를 잠시 이용할 수 없습니다. 잠시 후 다시 시도해 주세요.'
+        : (detail || '날씨 정보를 가져올 수 없습니다'))
+      : '',
+    errorDetail: query.isError ? detail : '',
   };
 }

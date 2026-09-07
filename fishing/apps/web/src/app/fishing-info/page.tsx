@@ -33,16 +33,16 @@ export default function FishingInfoPage() {
           <section className="info-section">
             <div className="info-section-head">
               <h2 className="info-section-title">🏞 저수지 수위</h2>
-              <Link href="/conditions?view=map" className="site-btn-sm">
-                지도에서 보기 →
+              <Link href="/conditions?layers=reservoir,fresh" className="site-btn-sm">
+                출조 지도에서 보기 →
               </Link>
             </div>
             <p className="info-tip-card-desc" style={{ margin: '0 0 12px' }}>
-              전국 어디서나 시·군·구 기준으로 저수지 저수율·수위를 지도 또는 목록으로 확인할 수 있습니다.
+              저수지 저수율·수위는 출조 지도의 저수지 레이어에서 확인할 수 있습니다.
             </p>
             <div className="info-callout">
-              💡 <Link href="/conditions">출조 · 수위</Link> 페이지에서 구미·충주·여주 등 권역을 검색하거나
-              위치를 선택해 보세요.
+              💡 <Link href="/conditions">출조 지도</Link>에서 검색·핀으로 위치를 고르거나,
+              <Link href="/conditions?layers=reservoir,fresh"> 저수지 레이어</Link>를 켜 시·군·구를 검색해 보세요.
             </div>
           </section>
 
@@ -104,8 +104,8 @@ export default function FishingInfoPage() {
           <div className="sidebar-card">
             <h4 className="sidebar-card-title">빠른 링크</h4>
             {[
-              { href: '/weather', label: '🌤 날씨 상세 보기' },
-              { href: '/conditions?view=map', label: '🏞 저수지 수위 지도' },
+              { href: '/weather', label: '🌤 낚시 날씨' },
+              { href: '/conditions', label: '🎣 출조 · 포인트' },
               { href: '/encyclopedia', label: '🐟 어종 사전 보기' },
               { href: '/ranking', label: '🏆 랭킹 확인' },
               { href: '/tournament', label: '🏅 대회 참가' },

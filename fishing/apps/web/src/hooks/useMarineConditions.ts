@@ -6,6 +6,7 @@ import type { WeatherLocation } from '@/lib/weather';
 import {
   extractTideEvents,
   type MarineConditionsData,
+  type SeaFishingGubun,
   type SeaFishingIndexRow,
   type TideForecastPoint,
   type TideForecastRow,
@@ -19,11 +20,14 @@ const EMPTY_TIDE = {
   rows: [] as TideForecastRow[],
 };
 
-async function fetchMarineConditions(location: WeatherLocation): Promise<MarineConditionsData> {
+async function fetchMarineConditions(
+  location: WeatherLocation,
+  gubun: SeaFishingGubun,
+): Promise<MarineConditionsData> {
   const { lat, lng } = location;
 
   const [fishingSettled, tideSettled] = await Promise.allSettled([
-    api.get('/weather/fishing-index', { params: { gubun: '갯바위', lat, lng } }),
+    api.get('/weather/fishing-index', { params: { gubun, lat, lng } }),
     api.get('/weather/tide-forecast', { params: { lat, lng } }),
   ]);
 
@@ -51,18 +55,24 @@ async function fetchMarineConditions(location: WeatherLocation): Promise<MarineC
   };
 }
 
-export function useMarineConditions(location: WeatherLocation | null, enabled = true) {
+export function useMarineConditions(
+  location: WeatherLocation | null,
+  enabled = true,
+  gubun: SeaFishingGubun = '갯바위',
+) {
   const query = useQuery({
     queryKey: [
       'marine-conditions',
       location ? Number(location.lat.toFixed(3)) : null,
       location ? Number(location.lng.toFixed(3)) : null,
+      gubun,
     ],
-    queryFn: () => fetchMarineConditions(location!),
+    queryFn: () => fetchMarineConditions(location!, gubun),
     enabled: enabled && !!location,
     staleTime: STALE_MS,
     gcTime: 60 * 60 * 1000,
     retry: 1,
+    placeholderData: (previous) => previous,
   });
 
   return {

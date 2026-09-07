@@ -76,19 +76,24 @@ function normalizeSpeciesSpotlight(
 }
 
 export async function fetchHomeData() {
-  const [rankingsData, speciesSpotlight, tournaments, postsData, announcements] = await Promise.all([
-    getJson<{ rankings: HomeRankingItem[] }>('/rankings?periodType=weekly&limit=8'),
-    getJson<HomeSpeciesSpotlight>('/rankings/home-species'),
-    getJson<HomeTournament[]>('/tournaments?status=active'),
-    getJson<{ items: HomePost[] }>('/posts?limit=5'),
-    getJson<HomeAnnouncement[]>('/announcements?limit=3'),
-  ]);
+  const [weeklyData, alltimeData, speciesSpotlight, tournaments, postsData, announcements] =
+    await Promise.all([
+      getJson<{ rankings: HomeRankingItem[] }>('/rankings?periodType=weekly&limit=8'),
+      getJson<{ rankings: HomeRankingItem[] }>('/rankings?periodType=alltime&limit=8'),
+      getJson<HomeSpeciesSpotlight>('/rankings/home-species'),
+      getJson<HomeTournament[]>('/tournaments?status=active'),
+      getJson<{ items: HomePost[] }>('/posts?limit=5'),
+      getJson<HomeAnnouncement[]>('/announcements?limit=3'),
+    ]);
 
-  const rankings = rankingsData?.rankings ?? [];
+  const rankings = weeklyData?.rankings ?? [];
+  const alltimeRankings = alltimeData?.rankings ?? [];
+  const spotlightSource = rankings.length ? rankings : alltimeRankings;
 
   return {
     rankings,
-    speciesSpotlight: normalizeSpeciesSpotlight(speciesSpotlight, rankings),
+    alltimeRankings,
+    speciesSpotlight: normalizeSpeciesSpotlight(speciesSpotlight, spotlightSource),
     tournaments: Array.isArray(tournaments) ? tournaments : [],
     posts: postsData?.items ?? [],
     announcements: Array.isArray(announcements) ? announcements : [],

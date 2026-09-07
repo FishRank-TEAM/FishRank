@@ -11,3 +11,4 @@ export const CAPTURE_RULES = [
 
 export const UPLOAD_CHANNEL_APP = 'app';
 export const UPLOAD_CHANNEL_WEB = 'web';
+  

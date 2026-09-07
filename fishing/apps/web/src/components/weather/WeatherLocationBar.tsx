@@ -17,6 +17,7 @@ type Props = {
   onGpsRequest: () => void;
   gpsLoading?: boolean;
   gpsError?: string;
+  onFavoritesChange?: (favorites: FavoriteSpot[]) => void;
 };
 
 export default function WeatherLocationBar({
@@ -25,12 +26,14 @@ export default function WeatherLocationBar({
   onGpsRequest,
   gpsLoading = false,
   gpsError = '',
+  onFavoritesChange,
 }: Props) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [favorites, setFavorites] = useState<FavoriteSpot[]>([]);
   const [showResults, setShowResults] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const listId = 'weather-location-results';
 
   const { data: presets = [] } = useQuery({
     queryKey: ['weather-presets'],
@@ -78,17 +81,22 @@ export default function WeatherLocationBar({
     setShowResults(false);
   };
 
-  const handleFavorite = () => {
-    setFavorites(addFavorite(location));
+  const favId = `${location.lat.toFixed(4)},${location.lng.toFixed(4)}`;
+  const isFavorited = favorites.some((f) => f.id === favId);
+
+  const handleToggleFavorite = () => {
+    const next = isFavorited
+      ? removeFavorite(favId)
+      : addFavorite(location);
+    setFavorites(next);
+    onFavoritesChange?.(next);
   };
 
   const handleRemoveFavorite = (id: string) => {
-    setFavorites(removeFavorite(id));
+    const next = removeFavorite(id);
+    setFavorites(next);
+    onFavoritesChange?.(next);
   };
-
-  const isFavorited = favorites.some(
-    (f) => f.lat.toFixed(4) === location.lat.toFixed(4) && f.lng.toFixed(4) === location.lng.toFixed(4),
-  );
 
   return (
     <section className="weather-g-header">
@@ -101,16 +109,21 @@ export default function WeatherLocationBar({
             onClick={onGpsRequest}
             disabled={gpsLoading}
           >
-            {gpsLoading ? '⊙ 위치 확인 중…' : '⊕ 현재 위치 사용'}
+            {gpsLoading ? '위치 확인 중…' : '현재 위치 사용'}
           </button>
           {gpsError && <p className="weather-g-loc-gps-error">{gpsError}</p>}
         </div>
         <div className="weather-g-header-actions">
-          {!isFavorited && (
-            <button type="button" className="weather-g-loc-fav" onClick={handleFavorite} title="즐겨찾기">
-              ☆
-            </button>
-          )}
+          <button
+            type="button"
+            className={`weather-g-loc-fav${isFavorited ? ' active' : ''}`}
+            onClick={handleToggleFavorite}
+            title={isFavorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+            aria-pressed={isFavorited}
+            aria-label={isFavorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+          >
+            {isFavorited ? '★' : '☆'}
+          </button>
         </div>
       </div>
 
@@ -121,20 +134,30 @@ export default function WeatherLocationBar({
           value={query}
           onChange={(e) => { setQuery(e.target.value); setShowResults(true); }}
           onFocus={() => setShowResults(true)}
-          placeholder="지역·포인트 검색"
+          placeholder="지역·낚시터·항구 검색 (전국)"
           className="weather-g-search-input"
           autoComplete="off"
+          role="combobox"
+          aria-expanded={showResults}
+          aria-controls={listId}
+          aria-autocomplete="list"
         />
         {query && (
           <button type="button" className="weather-g-search-clear" onClick={() => { setQuery(''); setShowResults(true); }} aria-label="지우기">×</button>
         )}
         {showResults && (
-          <div className="weather-g-search-results">
+          <div className="weather-g-search-results" id={listId} role="listbox">
             <p className="weather-g-search-title">{debouncedQuery ? '검색 결과' : '추천 낚시 포인트'}</p>
             {searching && <p className="weather-search-hint">검색 중...</p>}
             {!searching && results.length === 0 && <p className="weather-search-hint">결과 없음</p>}
             {results.map((place) => (
-              <button key={place.id} type="button" className="weather-search-item" onClick={() => selectPlace(place)}>
+              <button
+                key={place.id}
+                type="button"
+                role="option"
+                className="weather-search-item"
+                onClick={() => selectPlace(place)}
+              >
                 <span className="weather-search-item-name">{place.name}</span>
                 <span className="weather-search-item-addr">{place.address}</span>
               </button>

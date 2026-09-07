@@ -26,6 +26,11 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
       setRankingType(type);
     }
 
+    const periodParam = searchParams.get('period') ?? searchParams.get('periodType');
+    if (periodParam === 'weekly' || periodParam === 'alltime') {
+      setPeriod(periodParam);
+    }
+
     const sid = searchParams.get('speciesId');
     if (sid !== null) {
       const id = Number(sid);
@@ -41,7 +46,7 @@ function RankingShellInner({ children }: { children: React.ReactNode }) {
     if (type === 'unofficial') {
       setSpeciesId(0);
     }
-  }, [searchParams, setSpeciesId, setSpeciesCategory, setRankingType]);
+  }, [searchParams, setSpeciesId, setSpeciesCategory, setRankingType, setPeriod]);
 
   useEffect(() => {
     void preloadKakaoMap().catch(() => {});

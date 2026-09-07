@@ -109,6 +109,7 @@ export default function HomeSidebar({ tournaments, posts, announcements = [] }: 
           <Link href="/ranking/regional">지역별 랭킹</Link>
           <Link href="/encyclopedia">어종 사전</Link>
           <Link href="/weather">낚시 날씨</Link>
+          <Link href="/conditions">출조</Link>
           <Link href="/fishing-info">낚시 정보</Link>
         </nav>
       </section>

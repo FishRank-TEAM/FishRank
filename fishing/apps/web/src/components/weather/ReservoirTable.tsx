@@ -79,7 +79,12 @@ export default function ReservoirTable({ rows, selectedFacCode, onSelect }: Prop
           {sorted.map((row) => (
             <tr
               key={row.facCode}
-              className={row.facCode === selectedFacCode ? 'selected' : undefined}
+              className={[
+                row.facCode === selectedFacCode ? 'selected' : '',
+                row.ratePercent == null ? 'dim' : '',
+              ]
+                .filter(Boolean)
+                .join(' ') || undefined}
               onClick={() => onSelect(row)}
             >
               <td><strong>{row.facName}</strong></td>

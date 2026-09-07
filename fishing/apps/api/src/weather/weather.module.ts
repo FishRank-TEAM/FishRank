@@ -5,6 +5,7 @@ import { GeocodeService } from './geocode.service';
 import { KhoaPublicClient } from './khoa-public.client';
 import { ReservoirPublicClient } from './reservoir-public.client';
 import { MarineConditionsService } from './marine-conditions.service';
+import { FishingBanService } from './fishing-ban.service';
 
 @Module({
   controllers: [WeatherController],
@@ -14,6 +15,7 @@ import { MarineConditionsService } from './marine-conditions.service';
     KhoaPublicClient,
     ReservoirPublicClient,
     MarineConditionsService,
+    FishingBanService,
   ],
 })
 export class WeatherModule {}

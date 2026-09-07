@@ -4292,6 +4292,106 @@ h3 { font-size: 16px; font-weight: 700; }
   font-weight: 700;
 }
 
+.home-ranking-period-tabs {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.home-ranking-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  flex-wrap: wrap;
+}
+
+.home-ranking-next-hint {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.home-ranking-progress {
+  height: 4px;
+  margin: 0 0 12px;
+  border-radius: 999px;
+  background: #e5eaf0;
+  overflow: hidden;
+  cursor: default;
+}
+
+.home-ranking-progress-bar {
+  height: 100%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--ocean-bright, #3b82f6), var(--ocean-deep, #0A2540));
+  animation-name: home-ranking-progress-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.home-ranking-progress-bar.paused {
+  animation-play-state: paused;
+}
+
+@keyframes home-ranking-progress-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.home-ranking-period-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.home-ranking-period-tab + .home-ranking-period-tab {
+  border-left: 1px solid var(--border);
+}
+
+.home-ranking-period-tab.active {
+  background: var(--ocean-deep);
+  color: #fff;
+}
+
+.home-ranking-period-count {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.home-ranking-period-tab.active .home-ranking-period-count {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.home-ranking-rotate {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.home-ranking-rotate.visible {
+  opacity: 1;
+  transform: none;
+}
+
 .home-ranking-table-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -6769,6 +6869,37 @@ h3 { font-size: 16px; font-weight: 700; }
   font-size: 15px;
 }
 
+.weather-page-error > p {
+  margin: 0 0 12px;
+}
+
+.weather-page-error .county-search-btn {
+  margin-bottom: 8px;
+}
+
+.weather-page-error-dev {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.weather-page-error-dev summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.weather-page-error-dev ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.weather-page-error-detail {
+  margin: 8px 0 0;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
+
 .weather-page-error ol {
   margin: 0;
   padding-left: 20px;
@@ -7334,6 +7465,136 @@ h3 { font-size: 16px; font-weight: 700; }
   color: var(--ocean-bright);
 }
 
+.weather-conditions-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.weather-conditions-cta strong {
+  display: block;
+  font-size: 14px;
+  color: var(--ocean-deep);
+}
+
+.weather-conditions-cta p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.conditions-weather-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.conditions-weather-strip.muted {
+  color: var(--text-muted);
+}
+
+.conditions-weather-strip-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.conditions-weather-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.conditions-weather-score {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.conditions-weather-link {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ocean-bright);
+  text-decoration: none;
+}
+
+.conditions-weather-link:hover {
+  text-decoration: underline;
+}
+
+.conditions-gubun-toggle {
+  margin: 0 0 12px;
+  width: fit-content;
+}
+
+.weather-marine-fish-preview {
+  margin: 0;
+  padding: 8px 12px 4px;
+  opacity: 0.92;
+}
+
+.fishing-spots-grid--compact {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fishing-spots-grid--compact .fishing-spot-card {
+  flex: 0 0 148px;
+  scroll-snap-align: start;
+}
+
+.fishing-spots-more {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ocean-deep);
+  cursor: pointer;
+}
+
+.fishing-spots-more:hover {
+  background: var(--ocean-light);
+}
+
+.fishing-spots-empty {
+  padding: 16px;
+  text-align: center;
+}
+
+.fishing-spots-empty .county-search-btn {
+  margin-top: 10px;
+}
+
+@media (max-width: 560px) {
+  .weather-conditions-cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .conditions-explorer {
   margin-top: 12px;
 }
@@ -7349,31 +7610,614 @@ h3 { font-size: 16px; font-weight: 700; }
   color: var(--ocean-bright);
 }
 
+.conditions-map-hub {
+  margin: 12px 0 20px;
+}
+
+.conditions-map-head {
+  margin-bottom: 10px;
+}
+
+.conditions-map-layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cmap-layer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.cmap-layer-toggle input {
+  margin: 0;
+  accent-color: var(--ocean-deep);
+}
+
+.cmap-layer-toggle.on {
+  border-color: var(--ocean-bright);
+  background: var(--ocean-light);
+  color: var(--ocean-deep);
+}
+
+.conditions-map-canvas-wrap {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #e8eef3;
+}
+
+.conditions-map-canvas {
+  width: 100%;
+  height: min(62vh, 520px);
+  min-height: 360px;
+}
+
+.conditions-map-loading {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ocean-deep);
+  box-shadow: var(--shadow-sm);
+}
+
+.conditions-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.conditions-map-legend .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.conditions-map-legend .dot.sea { background: #1565c0; }
+.conditions-map-legend .dot.fresh { background: #2e7d32; }
+.conditions-map-legend .dot.high { background: #2563eb; }
+.conditions-map-legend .dot.mid { background: #f59e0b; }
+.conditions-map-legend .dot.low { background: #dc2626; }
+.conditions-map-legend .dot.ban {
+  background: #b91c1c;
+  border-radius: 2px;
+}
+.conditions-map-legend .dot.ban-restrict {
+  background: #ea580c;
+  border-radius: 2px;
+}
+.conditions-map-legend .dot.here {
+  background: #0A2540;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px #0A2540;
+}
+
+.conditions-map-loading--ban {
+  top: 48px;
+}
+
+.conditions-map-reservoir-detail {
+  margin-top: 12px;
+}
+
+.cmap-spot-pin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transform: translateY(-2px);
+}
+
+.cmap-spot-pin i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  background: #1565c0;
+}
+
+.cmap-spot-pin.fresh i { background: #2e7d32; }
+.cmap-spot-pin.mixed i { background: #ef6c00; }
+
+.cmap-spot-pin span {
+  max-width: 72px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(10, 37, 64, 0.88);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmap-spot-pin.active span {
+  background: #0A2540;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.cmap-here-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cmap-here-pin i {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0A2540;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #0A2540, 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.conditions-sticky {
+  position: sticky;
+  top: var(--nav-h);
+  z-index: 20;
+  margin: 12px 0;
+  padding: 8px 0;
+  background: color-mix(in srgb, var(--bg, #fff) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.weather-levels-section {
+  margin-top: 28px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.weather-levels-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.weather-levels-section .weather-marine-panel {
+  margin-top: 0;
+}
+
+.fishing-spots-panel {
+  margin: 16px 0 8px;
+}
+
+.fishing-spots-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.fishing-spots-fav-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.fishing-spots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 10px;
+}
+
+.fishing-spot-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.fishing-spot-card:hover {
+  border-color: var(--ocean-bright);
+  background: var(--ocean-light);
+}
+
+.fishing-spot-card.selected {
+  border-color: var(--ocean-deep);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ocean-deep) 25%, transparent);
+  background: #eef6fb;
+}
+
+.fishing-spot-card strong {
+  font-size: 13px;
+  color: var(--ocean-deep);
+  line-height: 1.3;
+}
+
+.fishing-spot-card > span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.fishing-spot-type {
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.fishing-spot-type.fresh {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.fishing-spot-type.mixed {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.conditions-mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.conditions-mode-tabs button {
+  border: none;
+  background: transparent;
+  padding: 12px 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.conditions-mode-tabs button.active {
+  background: var(--ocean-deep);
+  color: #fff;
+}
+
+.conditions-mode-tabs button:not(.active):hover {
+  background: var(--ocean-light);
+  color: var(--ocean-deep);
+}
+
 .conditions-county-search {
-  margin: 12px 0 16px;
+  margin: 4px 0 16px;
+}
+
+.conditions-county-search.compact {
+  margin: 0 0 12px;
+}
+
+.conditions-county-search.compact label {
+  display: none;
 }
 
 .conditions-county-search label {
   display: block;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   color: var(--ocean-deep);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .conditions-county-search-row {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .conditions-county-search input {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  width: auto;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
+  background: #fff;
+}
+
+.county-search-btn {
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: 64px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 10px;
+  background: var(--ocean-deep);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.county-search-btn:hover {
+  filter: brightness(1.08);
+}
+
+.county-search-btn.ghost {
+  background: #fff;
+  color: var(--ocean-deep);
+  border: 1px solid var(--border);
+}
+
+.conditions-county-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.conditions-county-chip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.conditions-county-chip:hover,
+.conditions-county-chip.active {
+  border-color: #81c784;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.conditions-today-summary {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, #e8f4fc 0%, #f7fbff 100%);
+}
+
+.conditions-today-kicker {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.conditions-today-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .conditions-today-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.conditions-today-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.conditions-today-item > span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.conditions-today-item > strong {
+  font-size: 16px;
+  color: var(--ocean-deep);
+  line-height: 1.3;
+}
+
+.conditions-today-item > strong.muted {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.conditions-today-item > strong.high {
+  color: #1565c0;
+}
+
+.conditions-today-item > strong.low {
+  color: #e65100;
+}
+
+.conditions-today-item > em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.conditions-card-toggle {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.conditions-card-toggle + .weather-marine-fish-list,
+.conditions-card-toggle + .weather-marine-muted,
+.conditions-card-toggle + .weather-marine-source {
+  margin-top: 10px;
+}
+
+.conditions-tide-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-left: 2px solid #bbdefb;
+}
+
+.conditions-tide-step {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 10px 0 10px 14px;
+}
+
+.conditions-tide-dot {
+  position: absolute;
+  left: -6px;
+  top: 16px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #90caf9;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #90caf9;
+}
+
+.conditions-tide-step.high .conditions-tide-dot {
+  background: #1565c0;
+  box-shadow: 0 0 0 1px #1565c0;
+}
+
+.conditions-tide-step.low .conditions-tide-dot {
+  background: #e65100;
+  box-shadow: 0 0 0 1px #e65100;
+}
+
+.conditions-tide-step.next {
+  background: color-mix(in srgb, #e3f2fd 70%, transparent);
+  border-radius: 8px;
+  margin-left: -4px;
+  padding-left: 18px;
+}
+
+.conditions-tide-step.next .conditions-tide-dot {
+  left: -2px;
+  width: 12px;
+  height: 12px;
+}
+
+.conditions-tide-step > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.conditions-tide-step strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ocean-deep);
+}
+
+.conditions-tide-step span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.conditions-tide-badge {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--ocean-deep);
+  color: #fff;
+}
+
+.conditions-empty {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.reservoir-rate-block {
+  margin-bottom: 12px;
+}
+
+.reservoir-rate-labels {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.reservoir-rate-labels strong {
+  font-size: 22px;
+}
+
+.reservoir-rate-gauge {
+  height: 10px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.reservoir-rate-gauge-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+  min-width: 0;
+}
+
+.reservoir-check-date {
+  font-size: 15px !important;
+  color: var(--ocean-deep) !important;
+  font-weight: 700 !important;
 }
 
 .weather-widget-links {
@@ -7384,7 +8228,7 @@ h3 { font-size: 16px; font-weight: 700; }
 }
 
 .reservoir-explorer {
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .reservoir-explorer-head {
@@ -7427,10 +8271,49 @@ h3 { font-size: 16px; font-weight: 700; }
   position: relative;
 }
 
+.reservoir-map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+}
+
+.rmap-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.rmap-toggle.on {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.rmap-toggle input {
+  accent-color: #b91c1c;
+}
+
 .reservoir-map-canvas {
   width: 100%;
   height: 320px;
   background: #e8f4f8;
+}
+
+.reservoir-map-canvas--tall {
+  height: min(62vh, 520px);
+  min-height: 360px;
 }
 
 .reservoir-map-fallback {
@@ -7464,6 +8347,21 @@ h3 { font-size: 16px; font-weight: 700; }
 .reservoir-map-legend .dot.high { background: #2563eb; }
 .reservoir-map-legend .dot.mid { background: #f59e0b; }
 .reservoir-map-legend .dot.low { background: #dc2626; }
+.reservoir-map-legend .dot.unknown { background: #9ca3af; }
+.reservoir-map-legend .dot.ban {
+  background: transparent;
+  border: 2px dashed #b91c1c;
+  box-sizing: border-box;
+}
+
+.reservoir-map-ban-note {
+  margin: 0;
+  padding: 8px 12px 10px;
+  font-size: 11px;
+  color: #9f1239;
+  background: #fff1f2;
+  border-top: 1px solid #fecdd3;
+}
 
 .reservoir-map-bubble {
   display: flex;
@@ -7475,6 +8373,98 @@ h3 { font-size: 16px; font-weight: 700; }
   font-size: 11px;
   line-height: 1;
   border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.rmap-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transform: translateY(4px);
+}
+
+.rmap-marker-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+}
+
+.rmap-marker-bubble strong {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.rmap-marker-name {
+  max-width: 72px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(10, 37, 64, 0.88);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rmap-ban-label {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(185, 28, 28, 0.92);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.rmap-spot-pin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.rmap-spot-pin i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50% 50% 50% 0;
+  background: #0A2540;
+  border: 2px solid #fff;
+  transform: rotate(-45deg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.rmap-spot-pin span {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--ocean-deep);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rmap-spot-pin.active span {
+  background: var(--ocean-deep);
+  color: #fff;
+  border-color: var(--ocean-deep);
+}
+
+.reservoir-explorer--mapfirst {
+  margin-top: 4px;
+}
+
+.reservoir-explorer--mapfirst .weather-marine-card.freshwater {
+  padding: 0;
+  overflow: hidden;
 }
 
 .reservoir-table-wrap {
@@ -7515,6 +8505,10 @@ h3 { font-size: 16px; font-weight: 700; }
 
 .reservoir-table tbody tr.selected {
   background: #e3f2fd;
+}
+
+.reservoir-table tbody tr.dim {
+  opacity: 0.55;
 }
 
 .reservoir-sort-btn {
@@ -10373,6 +11367,12 @@ h3 { font-size: 16px; font-weight: 700; }
   color: var(--text-sub);
 }
 
+.weather-g-loc-fav.active {
+  color: #f9a825;
+  border-color: #ffe082;
+  background: #fff8e1;
+}
+
 .weather-g-search {
   position: relative;
   display: flex;
@@ -10615,6 +11615,18 @@ h3 { font-size: 16px; font-weight: 700; }
   background: #e8f5e9;
   color: #2e7d32;
   font-weight: 700;
+  border: 1px solid #a5d6a7;
+  font-size: 12px;
+}
+
+.weather-g-best-chip-btn {
+  cursor: pointer;
+  font: inherit;
+}
+
+.weather-g-best-chip-btn:hover {
+  filter: brightness(0.97);
+  border-color: #66bb6a;
 }
 
 .weather-g-fishing-bar {
@@ -10792,6 +11804,19 @@ h3 { font-size: 16px; font-weight: 700; }
 }
 
 .weather-g-week {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weather-g-week-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ocean-deep);
+}
+
+.weather-g-week-row {
   display: flex;
   gap: 6px;
   overflow-x: auto;

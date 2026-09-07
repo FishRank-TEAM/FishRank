@@ -4,21 +4,26 @@ import HomeSpeciesRotate from './HomeSpeciesRotate';
 
 type Props = {
   rankings: HomeRankingItem[];
+  alltimeRankings?: HomeRankingItem[];
   tournaments: HomeTournament[];
   speciesSpotlight?: HomeSpeciesSpotlight;
 };
 
 export default function HomeStatsBar({
   rankings,
+  alltimeRankings = [],
   tournaments,
   speciesSpotlight,
 }: Props) {
+  const weeklyTop = rankings[0];
+  const alltimeTop = alltimeRankings[0];
+  const useAlltime = !weeklyTop && !!alltimeTop;
+  const top = weeklyTop ?? alltimeTop;
   const spotlight = speciesSpotlight ?? {
-    topRankSpecies: rankings[0]?.fishSpecies?.nameKo ?? null,
+    topRankSpecies: top?.fishSpecies?.nameKo ?? null,
     popularSpecies: null,
     popularCatchCount: 0,
   };
-  const top = rankings[0];
   const tournamentEntries = tournaments.reduce(
     (sum, t) => sum + (t._count?.entries ?? 0),
     0,
@@ -27,12 +32,12 @@ export default function HomeStatsBar({
   const fixedItems = [
     {
       value: top?.user.nickname ?? '–',
-      label: '이번주 1위',
+      label: useAlltime ? '역대 1위' : '이번주 1위',
       isText: true,
     },
     {
       value: top ? formatLength(top.lengthCm) : '–',
-      label: '주간 최장 기록',
+      label: useAlltime ? '역대 최장 기록' : '주간 최장 기록',
     },
     {
       value: tournaments.length > 0 ? `${tournaments.length}건` : '–',

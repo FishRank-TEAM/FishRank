@@ -82,7 +82,16 @@ export default function WeatherCharts({ day, selectedHour, onHourChange }: Props
       <div className="weather-g-chart-panel">
         <ResponsiveContainer width="100%" height={160}>
           {tab === 'temp' && (
-            <ComposedChart data={data} margin={{ top: 16, right: 12, left: 0, bottom: 0 }}>
+            <ComposedChart
+              data={data}
+              margin={{ top: 16, right: 12, left: 0, bottom: 0 }}
+              onClick={(state) => {
+                const payload = (state as { activePayload?: Array<{ payload: ChartPoint }> } | null)
+                  ?.activePayload?.[0]?.payload;
+                if (payload) handlePointClick(payload);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
               <XAxis dataKey="hour" tickFormatter={formatHourTick} tick={{ fontSize: 10 }} interval={tickInterval} />
               <YAxis domain={[yMin, yMax]} tick={{ fontSize: 10 }} unit="°" width={32} />
@@ -92,8 +101,8 @@ export default function WeatherCharts({ day, selectedHour, onHourChange }: Props
                 dataKey="temp"
                 stroke="#f9a825"
                 strokeWidth={2.5}
-                dot={false}
-                activeDot={{ r: 5, fill: '#f9a825' }}
+                dot={{ r: 3, fill: '#f9a825', strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: '#f9a825' }}
                 connectNulls
               />
               <ReferenceLine x={selectedHour} stroke="#0A2540" strokeWidth={2} />

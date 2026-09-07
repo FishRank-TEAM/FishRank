@@ -26,6 +26,8 @@ export type ReservoirWaterLevel = {
 @Injectable()
 export class ReservoirPublicClient {
   private readonly logger = new Logger(ReservoirPublicClient.name);
+  private readonly levelCache = new Map<string, { at: number; rows: ReservoirWaterLevel[] }>();
+  private readonly codeCache = new Map<string, { at: number; rows: ReservoirCode[] }>();
 
   constructor(private config: ConfigService) {}
 
@@ -39,16 +41,22 @@ export class ReservoirPublicClient {
     if (!baseUrl || !serviceKey || !query.trim()) return [];
 
     const q = query.trim();
+    const cached = this.codeCache.get(q);
+    if (cached && Date.now() - cached.at < 30 * 60 * 1000) {
+      return cached.rows;
+    }
+
     try {
       let rows = await this.fetchCodeRows(baseUrl, serviceKey, { county: q });
       if (!rows.length) {
         rows = await this.fetchCodeRows(baseUrl, serviceKey, { fac_name: q });
       }
+      this.codeCache.set(q, { at: Date.now(), rows });
       return rows;
     } catch (err) {
       if (err instanceof PublicDataAuthError) throw err;
       this.logger.warn(`저수지 코드 조회 실패: ${err}`);
-      return [];
+      return cached?.rows ?? [];
     }
   }
 
@@ -65,6 +73,11 @@ export class ReservoirPublicClient {
     const today = formatKmaDate(getKstNow());
     const dateEnd = options.dateEnd ?? today;
     const dateStart = options.latestOnly ? dateEnd : (options.dateStart ?? shiftDateString(dateEnd, -2));
+    const cacheKey = `${options.facCode}:${dateStart}:${dateEnd}:${options.latestOnly ? 1 : 0}`;
+    const cached = this.levelCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < 15 * 60 * 1000) {
+      return cached.rows;
+    }
 
     try {
       const xml = await fetchPublicDataXml(baseUrl, serviceKey, {
@@ -74,14 +87,17 @@ export class ReservoirPublicClient {
         date_s: dateStart,
         date_e: dateEnd,
       });
-      return extractReservoirRows(xml)
+      const rows = extractReservoirRows(xml)
         .map((row) => this.mapLevelRow(row))
         .filter((row): row is ReservoirWaterLevel => row !== null)
         .sort((a, b) => a.checkDate.localeCompare(b.checkDate));
+      this.levelCache.set(cacheKey, { at: Date.now(), rows });
+      return rows;
     } catch (err) {
       if (err instanceof PublicDataAuthError) throw err;
+      // 한도·일시 오류 시 이전 캐시라도 반환해 지도가 비지 않게
       this.logger.warn(`저수지 수위 조회 실패: ${err}`);
-      return [];
+      return cached?.rows ?? [];
     }
   }
 

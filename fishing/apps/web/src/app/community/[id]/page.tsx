@@ -21,12 +21,13 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
   const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['post', id],
     queryFn: async () => {
       const res = await api.get(`/posts/${id}`);
       return res.data.data;
     },
+    retry: false,
   });
 
   const commentMutation = useMutation({
@@ -42,7 +43,11 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
 
   const deleteMutation = useMutation({
     mutationFn: async () => api.delete(`/posts/${id}`),
-    onSuccess: () => router.push('/community'),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ['post', id] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      router.push('/community');
+    },
   });
 
   const handleComment = (e: React.FormEvent) => {
@@ -62,7 +67,17 @@ export default function PostDetailPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  if (!data) return null;
+  if (!data || isError) {
+    return (
+      <main>
+        <div className="site-container site-page-body site-empty">
+          <div className="site-empty-icon">📭</div>
+          <p>게시글을 찾을 수 없습니다.</p>
+          <PageBackLink href="/community" label="목록으로" />
+        </div>
+      </main>
+    );
+  }
 
   const isAuthor = user?.id === data.user.id;
 

@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { WeatherService } from './weather.service';
 import { GeocodeService } from './geocode.service';
 import { MarineConditionsService } from './marine-conditions.service';
+import { FishingBanService } from './fishing-ban.service';
 
 @ApiTags('날씨')
 @Controller('weather')
@@ -11,6 +12,7 @@ export class WeatherController {
     private weatherService: WeatherService,
     private geocodeService: GeocodeService,
     private marineConditions: MarineConditionsService,
+    private fishingBan: FishingBanService,
   ) {}
 
   @Get('search')
@@ -172,6 +174,34 @@ export class WeatherController {
     @Query('dateEnd') dateEnd?: string,
   ) {
     const data = await this.marineConditions.getReservoirLevels(facCode, dateStart, dateEnd);
+    return { success: true, data };
+  }
+
+  @Get('fishing-bans')
+  @Header('Cache-Control', 'public, max-age=3600')
+  @ApiOperation({ summary: '인근 낚시금지·제한·보호구역 (공개 지정구역)' })
+  @ApiQuery({ name: 'lat', required: true, example: 37.5 })
+  @ApiQuery({ name: 'lng', required: true, example: 127.3 })
+  @ApiQuery({ name: 'radiusKm', required: false, example: 80 })
+  async getFishingBans(
+    @Query('lat') latStr: string,
+    @Query('lng') lngStr: string,
+    @Query('radiusKm') radiusKmStr?: string,
+  ) {
+    const lat = Number(latStr);
+    const lng = Number(lngStr);
+    const radiusKm = radiusKmStr != null ? Number(radiusKmStr) : 80;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new BadRequestException('lat, lng는 숫자여야 합니다');
+    }
+    if (lat < 33 || lat > 39 || lng < 124 || lng > 132) {
+      throw new BadRequestException('한국 지역 좌표만 지원합니다');
+    }
+    const data = await this.fishingBan.getNearby(
+      lat,
+      lng,
+      Number.isFinite(radiusKm) ? Math.min(Math.max(radiusKm, 10), 200) : 80,
+    );
     return { success: true, data };
   }
 }

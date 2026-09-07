@@ -13,7 +13,9 @@ type Props = {
 
 export default function WeatherWeekRow({ days, selectedDate, currentTemp, onSelectDate }: Props) {
   return (
-    <section className="weather-g-week">
+    <section className="weather-g-week" aria-label="주간 예보">
+      <h3 className="weather-g-week-title">주간 예보</h3>
+      <div className="weather-g-week-row">
       {days.map((day) => {
         const active = day.date === selectedDate;
         const emoji = dominantSkyEmoji(day);
@@ -25,6 +27,7 @@ export default function WeatherWeekRow({ days, selectedDate, currentTemp, onSele
             type="button"
             className={`weather-g-week-item${active ? ' active' : ''}`}
             onClick={() => onSelectDate(day.date)}
+            aria-pressed={active}
           >
             <span className="weather-g-week-day">{isToday(day.date) ? '오늘' : weekDayShort(day.date)}</span>
             <span className="weather-g-week-emoji">{emoji}</span>
@@ -34,6 +37,7 @@ export default function WeatherWeekRow({ days, selectedDate, currentTemp, onSele
           </button>
         );
       })}
+      </div>
     </section>
   );
 }
