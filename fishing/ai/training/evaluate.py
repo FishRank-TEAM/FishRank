@@ -15,6 +15,14 @@ DEFAULT_VAL = AI_ROOT / "dataset" / "val"
 TARGET_ACCURACY = 0.80
 
 
+WATCH_PAIRS = (
+    ("snakehead", "largemouth_bass"),
+    ("snakehead", "smallmouth_bass"),
+    ("largemouth_bass", "snakehead"),
+    ("smallmouth_bass", "snakehead"),
+)
+
+
 def evaluate(model_path: Path, val_dir: Path) -> dict[str, float | int]:
     from ultralytics import YOLO
 
@@ -24,6 +32,8 @@ def evaluate(model_path: Path, val_dir: Path) -> dict[str, float | int]:
     total = 0
     correct = 0
     per_class: dict[str, dict[str, int]] = {}
+    # (expected, predicted) -> count
+    confusions: dict[tuple[str, str], int] = {}
 
     for class_dir in sorted(val_dir.iterdir()):
         if not class_dir.is_dir():
@@ -51,6 +61,10 @@ def evaluate(model_path: Path, val_dir: Path) -> dict[str, float | int]:
             if pred_slug == expected_slug:
                 correct += 1
                 per_class[expected_slug]["correct"] += 1
+            else:
+                confusions[(expected_slug, pred_slug)] = (
+                    confusions.get((expected_slug, pred_slug), 0) + 1
+                )
 
     accuracy = correct / total if total else 0.0
     return {
@@ -58,6 +72,7 @@ def evaluate(model_path: Path, val_dir: Path) -> dict[str, float | int]:
         "correct": correct,
         "accuracy": accuracy,
         "per_class": per_class,
+        "confusions": confusions,
     }
 
 
@@ -101,6 +116,23 @@ def main() -> None:
     if weak:
         print(f"\n개선 필요 클래스 ({len(weak)}): {', '.join(weak[:8])}{'…' if len(weak) > 8 else ''}")
         print("→ ai/data/ruler_catches/<slug>/ 에 줄자+물고기 실사진 추가 후 재학습")
+
+    confusions: dict[tuple[str, str], int] = result.get("confusions", {})  # type: ignore[assignment]
+    watch_hits = [
+        (exp, pred, cnt)
+        for (exp, pred), cnt in sorted(confusions.items(), key=lambda x: -x[1])
+        if (exp, pred) in WATCH_PAIRS or (pred, exp) in WATCH_PAIRS
+    ]
+    if watch_hits:
+        print("\n=== 배스↔가물치 혼동 ===")
+        for exp, pred, cnt in watch_hits:
+            print(f"  {exp} → {pred}: {cnt}건")
+
+    top_conf = sorted(confusions.items(), key=lambda x: -x[1])[:12]
+    if top_conf:
+        print("\n=== Top 혼동쌍 ===")
+        for (exp, pred), cnt in top_conf:
+            print(f"  {exp} → {pred}: {cnt}건")
 
 
 if __name__ == "__main__":

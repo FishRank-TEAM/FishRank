@@ -10,6 +10,7 @@ import numpy as np
 from .config import settings
 from .ruler import RulerResult
 from .species_catalog import SPECIES_BY_SLUG, normalize_slug
+from .species_disambiguate import resolve_bass_snakehead
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +143,7 @@ def _merge_scores(*score_maps: dict[str, float]) -> dict[str, float]:
     return merged
 
 
-INFERENCE_VERSION = "crop-v2"
+INFERENCE_VERSION = "crop-v2-bass-snakehead"
 
 
 def classify_with_yolo(image_bgr: np.ndarray, ruler: RulerResult) -> YoloSpeciesResult | None:
@@ -167,6 +168,12 @@ def classify_with_yolo(image_bgr: np.ndarray, ruler: RulerResult) -> YoloSpecies
             reverse=True,
         )
 
+        resolved = resolve_bass_snakehead(image_bgr, ruler, candidates)
+        method = "yolo"
+        if resolved is not None:
+            candidates = resolved
+            method = "yolo+shape"
+
         top_slug, top_score = candidates[0]
         second_score = candidates[1][1] if len(candidates) > 1 else 0.0
 
@@ -175,7 +182,7 @@ def classify_with_yolo(image_bgr: np.ndarray, ruler: RulerResult) -> YoloSpecies
                 slug="other",
                 label="Other Fish",
                 confidence=round(top_score, 3),
-                method="yolo",
+                method=method,
                 top_candidates=candidates[:3],
             )
 
@@ -189,7 +196,7 @@ def classify_with_yolo(image_bgr: np.ndarray, ruler: RulerResult) -> YoloSpecies
             slug=top_slug,
             label=label,
             confidence=round(min(top_score, 0.99), 3),
-            method="yolo",
+            method=method,
             top_candidates=candidates[:3],
         )
     except Exception as exc:

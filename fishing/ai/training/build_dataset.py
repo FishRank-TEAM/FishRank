@@ -175,6 +175,7 @@ def build_dataset(
     max_crawled_per_class: int | None = None,
     max_per_class: int | None = None,
     skip_inat: bool = False,
+    oversample_to: int | None = None,
 ) -> dict[str, int]:
     random.seed(seed)
     rng = random.Random(seed)
@@ -243,6 +244,12 @@ def build_dataset(
             val_items = class_images[:val_count]
             train_items = class_images[val_count:]
 
+            # 소수 클래스 train oversample (val은 원본만 유지해 평가 왜곡 방지)
+            if oversample_to and len(train_items) > 0 and len(train_items) < oversample_to:
+                need = oversample_to - len(train_items)
+                extras = [train_items[i % len(train_items)] for i in range(need)]
+                train_items = list(train_items) + extras
+
             for split, items in (("train", train_items), ("val", val_items)):
                 root = train_root if split == "train" else val_root
                 for idx, (source, payload) in enumerate(items):
@@ -281,6 +288,13 @@ def main() -> None:
                         help="학습에 넣을 클래스당 총 상한 (미지정=전부)")
     parser.add_argument("--skip-inat", action="store_true",
                         help="크롤이 있으면 iNat API 호출 생략")
+    parser.add_argument(
+        "--oversample-to",
+        type=int,
+        default=None,
+        metavar="N",
+        help="소수 클래스 train을 N장까지 복제 보강 (예: 320). val은 원본만 유지",
+    )
     parser.add_argument("--val-ratio", type=float, default=VAL_RATIO)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
@@ -313,6 +327,8 @@ def main() -> None:
         print(f"크롤 상한: 클래스당 {args.max_crawled_per_class}장", flush=True)
     if args.max_per_class:
         print(f"총 상한: 클래스당 {args.max_per_class}장", flush=True)
+    if args.oversample_to:
+        print(f"train oversample: 소수 클래스 → {args.oversample_to}장", flush=True)
     if args.skip_inat:
         print("iNat API: 크롤 있으면 생략", flush=True)
     print(flush=True)
@@ -329,6 +345,7 @@ def main() -> None:
         max_crawled_per_class=args.max_crawled_per_class,
         max_per_class=args.max_per_class,
         skip_inat=args.skip_inat,
+        oversample_to=args.oversample_to,
     )
 
     print("\n=== 완료 ===")
