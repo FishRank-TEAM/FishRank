@@ -1,0 +1,23 @@
+{
+  "name": "lidar-depth",
+  "version": "1.0.0",
+  "description": "ARKit scene depth Expo module for FishRank precision measurement",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {},
+  "keywords": ["react-native", "expo", "lidar", "arkit", "depth"],
+  "repository": {},
+  "bugs": {},
+  "author": "FishRank",
+  "license": "UNLICENSED",
+  "homepage": "",
+  "dependencies": {},
+  "devDependencies": {
+    "expo-modules-core": "*"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}

@@ -4,10 +4,11 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { DevOnlyGuard } from './dev-only.guard';
+import { MeasureController } from './measure.controller';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [AiController],
+  controllers: [AiController, MeasureController],
   providers: [AiService, DevOnlyGuard],
   exports: [AiService],
 })

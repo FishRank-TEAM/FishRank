@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import MenuRow from '@/components/ui/MenuRow';
 import { useAuthStore } from '@/store/auth.store';
 import {
@@ -14,6 +14,7 @@ import { fonts } from '@/theme/typography';
 import { spacing } from '@/theme/layout';
 
 const WEATHER_PRESET = { lat: 37.5665, lng: 126.978, label: '서울' };
+const MEASURE_HREF = '/measure/precision' as Href;
 
 /** 마이 탭 하단 — 기존 더보기 메뉴 (IA: 4탭, 3뎁스 이내) */
 export default function AppMenuSection() {
@@ -52,6 +53,12 @@ export default function AppMenuSection() {
         onPress={() => router.push('/encyclopedia')}
       />
       <MenuRow icon="ribbon-outline" title="낚시 정보 · 매듭" onPress={() => router.push('/fishing-info')} />
+      <MenuRow
+        icon="scan-outline"
+        title="정밀 측정 (LiDAR)"
+        subtitle="iPhone Pro · Dev Client"
+        onPress={() => router.push(MEASURE_HREF)}
+      />
       <MenuRow
         icon="megaphone-outline"
         title="공지 · 이벤트"

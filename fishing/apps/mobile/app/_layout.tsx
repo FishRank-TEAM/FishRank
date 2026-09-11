@@ -29,6 +29,7 @@ onlineManager.setEventListener((setOnline) => {
 function isProtectedRoute(segments: string[]): boolean {
   const [group, screen] = segments;
   if (group === '(tabs)' && (screen === 'capture' || screen === 'my')) return true;
+  if (group === 'measure') return true;
   if (group === 'upload' || group === 'my') return true;
   if (group === 'community' && screen === 'write') return true;
   if (group === 'admin') return true;

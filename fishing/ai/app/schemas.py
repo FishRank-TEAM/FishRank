@@ -33,3 +33,21 @@ class HealthResponse(BaseModel):
     yoloModelPath: str | None = None
     yoloClassCount: int | None = None
     inferenceVersion: str | None = None
+
+
+class KeypointPoint(BaseModel):
+    x: float
+    y: float
+
+
+class KeypointsRequest(BaseModel):
+    imageUrl: str
+
+
+class KeypointsResponse(BaseModel):
+    head: KeypointPoint
+    tail: KeypointPoint
+    confidence: float = Field(ge=0, le=1)
+    method: str
+    imageWidth: int
+    imageHeight: int

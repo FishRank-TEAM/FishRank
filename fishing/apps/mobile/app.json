@@ -17,9 +17,10 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.fishrank.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "줄자 인증 낚시 기록 촬영에 카메라가 필요합니다.",
+        "NSCameraUsageDescription": "정밀 측정 및 줄자 인증 낚시 기록 촬영에 카메라와 LiDAR가 필요합니다.",
         "NSPhotoLibraryUsageDescription": "커뮤니티 글에 사진을 첨부할 때 갤러리 접근이 필요합니다.",
         "NSLocationWhenInUseUsageDescription": "낚시 날씨 조회를 위해 현재 위치가 필요합니다.",
+        "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
@@ -35,16 +36,18 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.RECORD_AUDIO"
       ],
       "usesCleartextTraffic": true
     },
     "plugins": [
       "expo-router",
+      "expo-dev-client",
       [
         "expo-camera",
         {
-          "cameraPermission": "줄자 인증 낚시 기록 촬영에 카메라가 필요합니다."
+          "cameraPermission": "정밀 측정 및 줄자 인증 낚시 기록 촬영에 카메라가 필요합니다."
         }
       ],
       "expo-secure-store",
@@ -53,13 +56,19 @@
         {
           "locationWhenInUsePermission": "낚시 날씨 조회를 위해 현재 위치가 필요합니다."
         }
-      ]
+      ],
+      "./modules/lidar-depth/app.plugin.js"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "apiUrl": "http://localhost:4000/api/v1"
-    }
+      "apiUrl": "http://localhost:4000/api/v1",
+      "router": {},
+      "eas": {
+        "projectId": "78797cc2-f059-46b4-991a-92c7bf9da614"
+      }
+    },
+    "owner": "rjsgud49"
   }
 }

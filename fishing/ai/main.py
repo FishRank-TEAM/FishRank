@@ -1,10 +1,19 @@
 from fastapi import Depends, FastAPI, HTTPException
 
-from app.analyzer import analyze_image
+from app.analyzer import analyze_image, resolve_image_path
 from app.auth import verify_internal_secret
 from app.config import settings
-from app.schemas import AnalyzeRequest, AnalyzeResponse, HealthResponse
+from app.keypoints import detect_keypoints
+from app.schemas import (
+    AnalyzeRequest,
+    AnalyzeResponse,
+    HealthResponse,
+    KeypointPoint,
+    KeypointsRequest,
+    KeypointsResponse,
+)
 from app.species_yolo import INFERENCE_VERSION, get_yolo_class_count, is_yolo_available, warmup_yolo
+import cv2
 
 app = FastAPI(title="FishRank AI Server", version="1.0.0")
 
@@ -42,3 +51,31 @@ def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"AI 분석 실패: {exc}") from exc
+
+
+@app.post(
+    "/keypoints",
+    response_model=KeypointsResponse,
+    dependencies=[Depends(verify_internal_secret)],
+)
+def keypoints(request: KeypointsRequest) -> KeypointsResponse:
+    try:
+        image_path = resolve_image_path(request.imageUrl)
+        image_bgr = cv2.imread(str(image_path))
+        if image_bgr is None:
+            raise ValueError(f"이미지를 읽을 수 없습니다: {image_path}")
+        result = detect_keypoints(image_bgr)
+        return KeypointsResponse(
+            head=KeypointPoint(x=result.head_x, y=result.head_y),
+            tail=KeypointPoint(x=result.tail_x, y=result.tail_y),
+            confidence=result.confidence,
+            method=result.method,
+            imageWidth=result.image_width,
+            imageHeight=result.image_height,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"키포인트 검출 실패: {exc}") from exc
