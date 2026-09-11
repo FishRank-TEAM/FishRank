@@ -1,0 +1,4 @@
+
+# Expo local module build caches
+apps/mobile/modules/**/android/.gradle/
+apps/mobile/modules/**/android/build/
