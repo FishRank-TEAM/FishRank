@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
-import { KNOTS, KNOT_DIFFICULTY_LABEL, getDifficultyBadgeClass } from '@/data/knots';
+import {
+  KNOTS,
+  KNOT_DIFFICULTY_LABEL,
+  getDifficultyBadgeClass,
+  getFeaturedKnots,
+} from '@/data/knots';
 
-const FEATURED_KNOTS = KNOTS.slice(0, 4);
+const FEATURED_KNOTS = getFeaturedKnots(4);
 
 const FORBIDDEN_ZONES_INFO = [
   { icon: '🚫', title: '금지 구역 확인 방법', desc: '국립공원, 보호구역, 상수원 보호구역은 낚시 금지. 환경부 자연환경정보 시스템(nie.go.kr)에서 확인 가능.' },
@@ -104,6 +109,7 @@ export default function FishingInfoPage() {
           <div className="sidebar-card">
             <h4 className="sidebar-card-title">빠른 링크</h4>
             {[
+              { href: '/fishing-info/knots', label: '🪢 매듭 가이드' },
               { href: '/weather', label: '🌤 낚시 날씨' },
               { href: '/conditions', label: '🎣 출조 · 포인트' },
               { href: '/encyclopedia', label: '🐟 어종 사전 보기' },

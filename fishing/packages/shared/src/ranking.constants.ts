@@ -63,5 +63,5 @@ export function getSpeciesLabel(speciesId: number): string {
 
 export function isValidRankingSpeciesId(id: number): boolean {
   if (id === ALL_RANKING_SPECIES_ID) return true;
-  return RANKING_SPECIES_IDS.includes(id);
+  return RANKING_SPECIES_IDS.some((speciesId) => speciesId === id);
 }

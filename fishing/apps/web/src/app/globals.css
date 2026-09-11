@@ -5463,7 +5463,8 @@ h3 { font-size: 16px; font-weight: 700; }
   .info-page-grid,
   .tournament-detail-grid,
   .encyclopedia-info-grid,
-  .knot-preview-grid {
+  .knot-preview-grid,
+  .knot-grid {
     grid-template-columns: 1fr !important;
   }
 
@@ -5976,27 +5977,6 @@ h3 { font-size: 16px; font-weight: 700; }
   color: var(--ocean-deep);
 }
 
-.knot-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.knot-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  box-shadow: var(--shadow-sm);
-}
-
-.knot-card-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
 .knot-card-name {
   font-weight: 900;
   font-size: 15px;
@@ -6006,17 +5986,6 @@ h3 { font-size: 16px; font-weight: 700; }
 .knot-card-usage {
   font-size: 12px;
   color: var(--text-sub);
-}
-
-.knot-card-steps {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.knot-card-steps li {
-  font-size: 13px;
-  color: var(--text-sub);
-  margin-bottom: 3px;
 }
 
 .info-section-head {
@@ -6076,7 +6045,44 @@ h3 { font-size: 16px; font-weight: 700; }
   gap: 4px;
 }
 
-/* ── Knots catalog (Knots 3D-style list) ── */
+/* ── Knots catalog ── */
+.knots-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.knots-sort select {
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 13px;
+}
+
+.knots-sort select option {
+  color: var(--text-primary);
+  background: #fff;
+}
+
+.knots-toolbar .site-btn-sm {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.knots-toolbar .site-btn-sm:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.knots-count {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .knots-intro {
   margin-bottom: 20px;
 }
@@ -6238,6 +6244,13 @@ h3 { font-size: 16px; font-weight: 700; }
   font-weight: 700;
 }
 
+.knot-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
 .knot-detail-steps {
   margin: 0;
   padding: 0;
@@ -6315,6 +6328,42 @@ h3 { font-size: 16px; font-weight: 700; }
 .knot-related-name {
   font-weight: 800;
   font-size: 13px;
+  color: var(--ocean-deep);
+}
+
+.knot-adjacent {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.knot-adjacent-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-decoration: none;
+  min-width: 0;
+  flex: 1;
+  transition: border-color 0.15s;
+}
+
+.knot-adjacent-link:hover {
+  border-color: var(--ocean-bright);
+}
+
+.knot-adjacent-link--next {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.knot-adjacent-name {
+  font-size: 14px;
+  font-weight: 800;
   color: var(--ocean-deep);
 }
 

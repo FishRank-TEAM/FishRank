@@ -2,8 +2,10 @@ import { Text, StyleSheet } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import Screen from '@/components/ui/Screen';
 import MenuRow from '@/components/ui/MenuRow';
-import { KNOTS } from '@/data/knots';
+import { KNOTS, KNOT_DIFFICULTY_LABEL, getFeaturedKnots } from '@/data/knots';
 import { colors } from '@/theme/colors';
+
+const FEATURED = getFeaturedKnots(4);
 
 export default function FishingInfoScreen() {
   const router = useRouter();
@@ -20,12 +22,12 @@ export default function FishingInfoScreen() {
           onPress={() => router.push('/fishing-info/knots')}
         />
         <Text style={styles.section}>추천 매듭</Text>
-        {KNOTS.slice(0, 4).map((knot) => (
+        {FEATURED.map((knot) => (
           <MenuRow
             key={knot.slug}
-            icon="🔗"
+            icon={knot.icon}
             title={knot.nameKo}
-            subtitle={knot.difficulty}
+            subtitle={`${KNOT_DIFFICULTY_LABEL[knot.difficulty]} · ${knot.summary}`}
             onPress={() => router.push(`/fishing-info/knots/${knot.slug}`)}
           />
         ))}
