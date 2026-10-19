@@ -192,6 +192,8 @@ git clone https://github.com/rjsgud49/FishRank.git
 cd FishRank/fishing
 
 npm install
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 npm run db:up
 npm run --prefix apps/api exec -- prisma migrate deploy
 npm run db:seed          # 선택

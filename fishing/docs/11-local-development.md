@@ -51,11 +51,21 @@ npm run db:seed
 
 ### 환경 변수 파일
 
+예시를 복사한 뒤 값을 채웁니다. `.env`는 커밋하지 않습니다.
+
+```bash
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+cp apps/mobile/.env.example apps/mobile/.env   # 실기기 테스트 시
+cp ai/.env.example ai/.env
+```
+
 | 앱 | 파일 | 필수 예시 |
 |---|---|---|
-| API | `apps/api/.env` | `DATABASE_URL`, `JWT_SECRET`, `REDIS_URL` |
+| API | `apps/api/.env` | `DATABASE_URL`, `JWT_SECRET`(16자 이상), `REDIS_URL` |
 | Web | `apps/web/.env` | `NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1` |
 | Mobile | `apps/mobile/.env` | `EXPO_PUBLIC_API_URL=http://<PC_LAN_IP>:4000/api/v1` |
+| AI | `ai/.env` | `INTERNAL_SECRET` — API의 `AI_SERVER_SECRET`과 같게 |
 
 모바일은 `localhost`가 **폰 자신**을 가리키므로, 실기기 테스트 시 PC의 Wi-Fi IPv4 주소를 넣어야 합니다.
 
