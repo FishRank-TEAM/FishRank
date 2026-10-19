@@ -5,6 +5,7 @@ import {
   RegionLevel,
   resolveCatchRegionKey,
 } from '../common/constants/korean-regions';
+import { compareOfficialRank, OFFICIAL_RANK_ORDER } from './official-rank';
 
 type RankingEntry = {
   rank: number;
@@ -141,11 +142,7 @@ export class RankingsService {
   }
 
   private sortRankings(list: CatchWithRelations[]): CatchWithRelations[] {
-    return [...list].sort((a, b) => {
-      const diff = Number(b.rankScore) - Number(a.rankScore);
-      if (diff !== 0) return diff;
-      return a.createdAt.getTime() - b.createdAt.getTime();
-    });
+    return [...list].sort(compareOfficialRank);
   }
 
   private sortUnofficialByVotes(list: CatchWithRelations[]): CatchWithRelations[] {
@@ -172,7 +169,7 @@ export class RankingsService {
       where: this.buildBaseWhere(speciesId, weekly, rankingType),
       include: this.catchInclude(rankingType),
       ...(rankingType === 'official'
-        ? { orderBy: { rankScore: 'desc' }, take: limit }
+        ? { orderBy: OFFICIAL_RANK_ORDER, take: limit }
         : {}),
     });
 
@@ -487,11 +484,7 @@ export class RankingsService {
   }
 
   private sortOvertakePool(list: OvertakeCatch[]): OvertakeCatch[] {
-    return [...list].sort((a, b) => {
-      const diff = Number(b.rankScore) - Number(a.rankScore);
-      if (diff !== 0) return diff;
-      return a.createdAt.getTime() - b.createdAt.getTime();
-    });
+    return [...list].sort(compareOfficialRank);
   }
 
   async getTopOvertakes(
