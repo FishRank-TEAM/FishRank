@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { softDeleteCatchData } from '../common/upload/catch-retention.util';
+import { computeRankScore } from '../common/certification/rank-score.util';
 import type { ReviewCatchDto } from './dto/review-catch.dto';
 import type { UpsertAnnouncementDto } from './dto/upsert-announcement.dto';
 import type { UpdateFeedbackDto } from './dto/update-feedback.dto';
@@ -212,18 +213,21 @@ export class AdminService {
   async reviewCatch(catchId: string, dto: ReviewCatchDto) {
     const catch_ = await this.prisma.catch.findUnique({
       where: { id: catchId, deletedAt: null },
-      include: { certification: true },
+      include: { certification: true, fishSpecies: { select: { rarityWeight: true } } },
     });
     if (!catch_) throw new NotFoundException('기록을 찾을 수 없습니다.');
 
+    const data: { status: string; rankScore?: number | null } = { status: dto.status };
+    if (dto.status === 'rejected') {
+      data.rankScore = null;
+    } else if (catch_.rankScore == null) {
+      const rankScore = computeRankScore(catch_.lengthCm, catch_.fishSpecies?.rarityWeight ?? 1, true);
+      if (rankScore != null) data.rankScore = rankScore;
+    }
+
     await this.prisma.catch.update({
       where: { id: catchId },
-      data: {
-        status: dto.status,
-        ...(dto.status === 'approved' && catch_.lengthCm
-          ? { rankScore: Number(catch_.lengthCm) * 1.0 }
-          : {}),
-      },
+      data,
     });
 
     if (catch_.certification) {
