@@ -93,11 +93,19 @@ export class PostsService {
   }
 
   async addComment(postId: string, userId: string, content: string) {
-    const post = await this.prisma.post.findUnique({ where: { id: postId } });
+    const trimmed = content?.trim() ?? '';
+    if (!trimmed) {
+      throw new BadRequestException('댓글 내용을 입력해 주세요.');
+    }
+
+    const post = await this.prisma.post.findFirst({
+      where: { id: postId, deletedAt: null },
+      select: { id: true },
+    });
     if (!post) throw new NotFoundException('게시글을 찾을 수 없습니다.');
 
     return this.prisma.comment.create({
-      data: { postId, userId, content },
+      data: { postId, userId, content: trimmed },
       include: {
         user: { select: { id: true, nickname: true, profileImage: true } },
       },
