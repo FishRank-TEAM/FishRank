@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -45,6 +46,10 @@ export class AuthService {
       throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
     }
 
+    if (user.deletedAt) {
+      throw new ForbiddenException('정지된 계정입니다. 관리자에게 문의해 주세요.');
+    }
+
     const tokens = this.generateTokens(user.id, user.email);
     return tokens;
   }
@@ -60,10 +65,16 @@ export class AuthService {
   async refresh(refreshToken: string) {
     try {
       const payload = this.jwtService.verify<{ sub: string; email: string }>(refreshToken);
-      const user = await this.usersService.findById(payload.sub);
-      if (!user) throw new UnauthorizedException();
+      const user = await this.usersService.findByIdIncludingDeleted(payload.sub);
+      if (!user) throw new UnauthorizedException('세션이 만료되었습니다. 다시 로그인해주세요.');
+      if (user.deletedAt) {
+        throw new ForbiddenException('정지된 계정입니다. 관리자에게 문의해 주세요.');
+      }
       return this.generateTokens(user.id, user.email);
-    } catch {
+    } catch (error) {
+      if (error instanceof ForbiddenException || error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('세션이 만료되었습니다. 다시 로그인해주세요.');
     }
   }
