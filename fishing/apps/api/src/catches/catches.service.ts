@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { resolveSpeciesId } from '../ai/species-slug.util';
 import { determineGrade } from '../common/certification/certification-grade.util';
+import { computeRankScore } from '../common/certification/rank-score.util';
 import {
   computeImageHash,
   removeUploadedFile,
@@ -236,11 +237,11 @@ export class CatchesService {
       : null;
 
     const lengthCm = analysis.rulerLengthCm;
-    const rarityWeight = species ? Number(species.rarityWeight) : 1.0;
-    const rankScore =
-      gradeResult.rankScoreEligible && lengthCm != null
-        ? Math.round(lengthCm * rarityWeight * 100) / 100
-        : null;
+    const rankScore = computeRankScore(
+      lengthCm,
+      species?.rarityWeight ?? 1,
+      gradeResult.rankScoreEligible,
+    );
 
     await this.prisma.catch.update({
       where: { id: catchId },
