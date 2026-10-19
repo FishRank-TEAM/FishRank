@@ -2,14 +2,18 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-const ALLOWED_EXT = /jpeg|jpg|png|webp|gif/;
+const ALLOWED_IMAGE_EXT = /^\.(jpe?g|png|webp|gif)$/i;
+
+export function isAllowedImageExtension(filename: string): boolean {
+  return ALLOWED_IMAGE_EXT.test(extname(filename));
+}
 
 export function imageFileFilter(
   _req: Express.Request,
   file: Express.Multer.File,
   cb: (error: Error | null, acceptFile: boolean) => void,
 ) {
-  if (ALLOWED_EXT.test(extname(file.originalname).toLowerCase())) {
+  if (isAllowedImageExtension(file.originalname)) {
     cb(null, true);
   } else {
     cb(new Error('jpg, png, webp, gif 형식만 업로드 가능합니다.'), false);
