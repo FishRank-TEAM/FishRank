@@ -54,12 +54,18 @@ export function determineGrade(input: GradeInput): GradeResult {
     };
   }
 
-  if (input.speciesConfidence < SPECIES_CONFIDENCE_S_THRESHOLD) {
+  if (
+    !Number.isFinite(input.speciesConfidence) ||
+    input.speciesConfidence < SPECIES_CONFIDENCE_S_THRESHOLD
+  ) {
+    const percentText = Number.isFinite(input.speciesConfidence)
+      ? `${Math.round(input.speciesConfidence * 100)}%`
+      : '측정 불가';
     return {
       grade: 'A',
       status: 'approved',
       rankScoreEligible: true,
-      reason: `어종 AI 신뢰도 ${Math.round(input.speciesConfidence * 100)}% (S등급 기준 ${SPECIES_CONFIDENCE_S_THRESHOLD * 100}% 이상)`,
+      reason: `어종 AI 신뢰도 ${percentText} (S등급 기준 ${SPECIES_CONFIDENCE_S_THRESHOLD * 100}% 이상)`,
     };
   }
 
