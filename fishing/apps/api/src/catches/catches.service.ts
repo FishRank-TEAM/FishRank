@@ -11,6 +11,7 @@ import {
   validatePhotoFreshness,
 } from '../common/upload/image-integrity.util';
 import { isUniqueConstraintError, softDeleteCatchData } from '../common/upload/catch-retention.util';
+import { parsePageLimit } from '../common/pagination.util';
 
 
 
@@ -344,7 +345,8 @@ export class CatchesService {
 
   async findMyList(userId: string, page = 1, limit = 20, recordType?: string) {
 
-    const skip = (page - 1) * limit;
+    const paging = parsePageLimit(page, limit, 20, 50);
+    const skip = (paging.page - 1) * paging.limit;
 
     const where: any = { userId, deletedAt: null };
 
@@ -374,7 +376,7 @@ export class CatchesService {
 
         skip,
 
-        take: limit,
+        take: paging.limit,
 
       }),
 
@@ -384,7 +386,7 @@ export class CatchesService {
 
 
 
-    return { items, total, page, limit, recordType: recordType ?? 'all' };
+    return { items, total, page: paging.page, limit: paging.limit, recordType: recordType ?? 'all' };
   }
 
   async updatePersonal(

@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { isCommunityTagKey, parseTagsInput, type CommunitySort } from './post-tags.util';
+import { parsePageLimit } from '../common/pagination.util';
 
 @Injectable()
 export class PostsService {
@@ -27,7 +28,8 @@ export class PostsService {
   }
 
   async findAll(page = 1, limit = 20, sort: CommunitySort = 'latest', tag?: string, q?: string) {
-    const skip = (page - 1) * limit;
+    const paging = parsePageLimit(page, limit, 20, 50);
+    const skip = (paging.page - 1) * paging.limit;
     const term = q?.trim();
     const where = {
       deletedAt: null,
@@ -57,11 +59,11 @@ export class PostsService {
         },
         orderBy,
         skip,
-        take: limit,
+        take: paging.limit,
       }),
       this.prisma.post.count({ where }),
     ]);
-    return { items, total, page, limit, sort, tag: tag ?? null, q: term ?? null };
+    return { items, total, page: paging.page, limit: paging.limit, sort, tag: tag ?? null, q: term ?? null };
   }
 
   async findById(id: string) {
@@ -154,7 +156,8 @@ export class PostsService {
   }
 
   async findByUser(userId: string, page = 1, limit = 10) {
-    const skip = (page - 1) * limit;
+    const paging = parsePageLimit(page, limit, 10, 50);
+    const skip = (paging.page - 1) * paging.limit;
     const [items, total] = await Promise.all([
       this.prisma.post.findMany({
         where: { userId, deletedAt: null },
@@ -163,11 +166,11 @@ export class PostsService {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: paging.limit,
       }),
       this.prisma.post.count({ where: { userId, deletedAt: null } }),
     ]);
-    return { items, total, page, limit };
+    return { items, total, page: paging.page, limit: paging.limit };
   }
 
   private normalizeTags(tags?: string[]): string[] {
