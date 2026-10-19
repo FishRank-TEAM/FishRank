@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { softDeleteCatchData } from '../common/upload/catch-retention.util';
 import type { ReviewCatchDto } from './dto/review-catch.dto';
 import type { UpsertAnnouncementDto } from './dto/upsert-announcement.dto';
 import type { UpdateFeedbackDto } from './dto/update-feedback.dto';
@@ -160,7 +161,7 @@ export class AdminService {
         if (!catch_) throw new NotFoundException('기록을 찾을 수 없습니다.');
         await this.prisma.catch.update({
           where: { id: targetId },
-          data: { deletedAt: new Date() },
+          data: softDeleteCatchData(),
         });
       } else {
         const post = await this.prisma.post.findUnique({ where: { id: targetId, deletedAt: null } });
@@ -645,7 +646,7 @@ export class AdminService {
     if (!catch_) throw new NotFoundException('기록을 찾을 수 없습니다.');
     await this.prisma.catch.update({
       where: { id: catchId },
-      data: { deletedAt: new Date() },
+      data: softDeleteCatchData(),
     });
     return { deleted: true };
   }

@@ -9,6 +9,7 @@ import {
   removeUploadedFile,
   validatePhotoFreshness,
 } from '../common/upload/image-integrity.util';
+import { isUniqueConstraintError, softDeleteCatchData } from '../common/upload/catch-retention.util';
 
 
 
@@ -40,33 +41,14 @@ export class CatchesService {
 
     const imageUrl = `/uploads/${file.filename}`;
 
+    const catch_ = await this.createCertifiedRow(userId, file.path, imageUrl, imageHash, body);
 
-
-    const catch_ = await this.prisma.catch.create({
-
-      data: {
-
-        userId,
-
-        imageUrl,
-
-        imageHash,
-
-        locationName: body.locationName,
-
-        memo: body.memo,
-
-        recordType: 'certified',
-
-        status: 'pending',
-
-      },
-
-    });
-
-
-
-    await this.runAiProcess(catch_.id, imageUrl);
+    try {
+      await this.runAiProcess(catch_.id, imageUrl);
+    } catch (error) {
+      await this.discardFailedCertifiedCatch(catch_.id, file.path);
+      throw error;
+    }
 
     const processed = await this.prisma.catch.findUnique({
       where: { id: catch_.id },
@@ -110,37 +92,15 @@ export class CatchesService {
 
 
 
-    const catch_ = await this.prisma.catch.create({
-
-      data: {
-
-        userId,
-
-        imageUrl,
-
-        imageHash,
-
-        locationName: body.locationName || null,
-
-        memo: body.memo || null,
-
-        recordType: 'personal',
-
-        status: 'approved',
-
-        lengthCm: lengthCm && !Number.isNaN(lengthCm) ? lengthCm : null,
-
-        fishSpeciesId: fishSpeciesId && !Number.isNaN(fishSpeciesId) ? fishSpeciesId : null,
-
-      },
-
-      include: {
-
-        fishSpecies: true,
-
-      },
-
-    });
+    const catch_ = await this.createPersonalRow(
+      userId,
+      file.path,
+      imageUrl,
+      imageHash,
+      body,
+      lengthCm,
+      fishSpeciesId,
+    );
 
 
 
@@ -162,18 +122,94 @@ export class CatchesService {
 
 
 
+  private async createCertifiedRow(
+    userId: string,
+    filePath: string,
+    imageUrl: string,
+    imageHash: string,
+    body: { locationName?: string; memo?: string },
+  ) {
+    try {
+      return await this.prisma.catch.create({
+        data: {
+          userId,
+          imageUrl,
+          imageHash,
+          locationName: body.locationName,
+          memo: body.memo,
+          recordType: 'certified',
+          status: 'pending',
+        },
+      });
+    } catch (error) {
+      return this.rethrowDuplicateImage(error, filePath);
+    }
+  }
+
+  private async createPersonalRow(
+    userId: string,
+    filePath: string,
+    imageUrl: string,
+    imageHash: string,
+    body: { locationName?: string; memo?: string },
+    lengthCm: number | null,
+    fishSpeciesId: number | null,
+  ) {
+    try {
+      return await this.prisma.catch.create({
+        data: {
+          userId,
+          imageUrl,
+          imageHash,
+          locationName: body.locationName || null,
+          memo: body.memo || null,
+          recordType: 'personal',
+          status: 'approved',
+          lengthCm: lengthCm && !Number.isNaN(lengthCm) ? lengthCm : null,
+          fishSpeciesId: fishSpeciesId && !Number.isNaN(fishSpeciesId) ? fishSpeciesId : null,
+        },
+        include: { fishSpecies: true },
+      });
+    } catch (error) {
+      return this.rethrowDuplicateImage(error, filePath);
+    }
+  }
+
   private async assertUniqueImageHash(imageHash: string, filePath: string) {
     const existing = await this.prisma.catch.findFirst({
-      where: { imageHash, deletedAt: null },
-      select: { id: true, userId: true },
+      where: { imageHash },
+      select: { id: true, deletedAt: true },
     });
 
-    if (existing) {
+    if (!existing) return;
+
+    if (!existing.deletedAt) {
       await removeUploadedFile(filePath);
       throw new ConflictException(
         '이미 등록된 사진입니다. 동일 사진 재업로드·타인 사진 도용은 허용되지 않습니다.',
       );
     }
+
+    await this.prisma.catch.update({
+      where: { id: existing.id },
+      data: { imageHash: null },
+    });
+  }
+
+  private async rethrowDuplicateImage(error: unknown, filePath: string): Promise<never> {
+    if (isUniqueConstraintError(error)) {
+      await removeUploadedFile(filePath);
+      throw new ConflictException(
+        '이미 등록된 사진입니다. 동일 사진 재업로드·타인 사진 도용은 허용되지 않습니다.',
+      );
+    }
+    throw error;
+  }
+
+  private async discardFailedCertifiedCatch(catchId: string, filePath: string) {
+    await this.prisma.certification.deleteMany({ where: { catchId } });
+    await this.prisma.catch.delete({ where: { id: catchId } });
+    await removeUploadedFile(filePath);
   }
 
 
@@ -390,7 +426,7 @@ export class CatchesService {
 
     return this.prisma.catch.update({
       where: { id: catchId },
-      data: { deletedAt: new Date() },
+      data: softDeleteCatchData(),
     });
   }
 
