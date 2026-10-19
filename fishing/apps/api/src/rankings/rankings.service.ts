@@ -6,6 +6,7 @@ import {
   resolveCatchRegionKey,
 } from '../common/constants/korean-regions';
 import { compareOfficialRank, OFFICIAL_RANK_ORDER } from './official-rank';
+import { parseLimit } from '../common/pagination.util';
 
 type RankingEntry = {
   rank: number;
@@ -165,6 +166,7 @@ export class RankingsService {
     rankingType: RankingType,
     limit: number,
   ) {
+    limit = parseLimit(limit, 10, 100);
     const catches = await this.prisma.catch.findMany({
       where: this.buildBaseWhere(speciesId, weekly, rankingType),
       include: this.catchInclude(rankingType),
@@ -316,6 +318,7 @@ export class RankingsService {
     excludeUserId?: string,
     limit = 50,
   ) {
+    limit = parseLimit(limit, 50, 100);
     const weekly = periodType === 'weekly';
     const where: Record<string, unknown> = this.buildBaseWhere(speciesId, weekly, 'unofficial');
     if (excludeUserId) {
@@ -446,6 +449,7 @@ export class RankingsService {
     limit = 20,
     rankingType: RankingType = 'official',
   ) {
+    limit = parseLimit(limit, 20, 50);
     const catches = (await this.prisma.catch.findMany({
       where: this.buildBaseWhere(speciesId, periodType === 'weekly', rankingType),
       include: {
@@ -494,6 +498,8 @@ export class RankingsService {
     limit = 8,
     rankingType: RankingType = 'official',
   ) {
+    topN = parseLimit(topN, 10, 50);
+    limit = parseLimit(limit, 8, 30);
     if (rankingType === 'unofficial') {
       return [];
     }
