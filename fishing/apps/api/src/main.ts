@@ -2,11 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { API_GLOBAL_PREFIX, GLOBAL_PREFIX_EXCLUDES } from './app-prefix';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix(API_GLOBAL_PREFIX, { exclude: GLOBAL_PREFIX_EXCLUDES });
 
   const isDev = process.env.NODE_ENV !== 'production';
 

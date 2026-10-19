@@ -279,5 +279,5 @@ jobs:
 
 | 서버 | URL | 응답 |
 |---|---|---|
-| NestJS | `GET /health` | `{ status: "ok" }` |
+| NestJS | `GET /health`, `GET /api/v1/health` | `{ status: "ok", timestamp }` |
 | FastAPI | `GET /health` | `{ status: "ok", model: "loaded" }` |
