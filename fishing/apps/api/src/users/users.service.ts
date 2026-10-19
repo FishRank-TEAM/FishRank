@@ -11,6 +11,11 @@ export class UsersService {
     });
   }
 
+  /** 정지(soft delete) 여부까지 구분이 필요할 때. 인증 통과용으로는 findById 를 쓴다. */
+  async findByIdIncludingDeleted(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
   }
