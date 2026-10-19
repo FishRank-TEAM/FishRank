@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from .config import settings
@@ -42,7 +43,10 @@ def determine_grade(
             error_message=f"촬영 규칙 미준수: {', '.join(failed)}",
         )
 
-    if species_confidence < settings.species_confidence_s_threshold:
+    if (
+        not math.isfinite(species_confidence)
+        or species_confidence < settings.species_confidence_s_threshold
+    ):
         return GradeResult(grade="A", error_message=None)
 
     return GradeResult(grade="S", error_message=None)
