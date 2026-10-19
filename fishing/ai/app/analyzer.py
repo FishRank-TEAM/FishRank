@@ -6,6 +6,7 @@ import cv2
 
 from .config import settings
 from .grade import determine_grade
+from .image_path import resolve_image_path as resolve_under_uploads
 from .ruler import detect_ruler_and_length
 from .rules import validate_capture_rules
 from .schemas import AnalyzeResponse
@@ -13,18 +14,7 @@ from .species import classify_species
 
 
 def resolve_image_path(image_url: str) -> Path:
-    if image_url.startswith("/uploads/"):
-        filename = image_url.removeprefix("/uploads/")
-        return settings.uploads_path / filename
-
-    if image_url.startswith("s3://"):
-        raise NotImplementedError("S3 이미지는 로컬 개발 환경에서 아직 지원하지 않습니다.")
-
-    path = Path(image_url)
-    if path.is_file():
-        return path
-
-    raise FileNotFoundError(f"이미지를 찾을 수 없습니다: {image_url}")
+    return resolve_under_uploads(image_url, settings.uploads_path)
 
 
 def analyze_image(catch_id: str, image_url: str) -> AnalyzeResponse:
