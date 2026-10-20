@@ -11,6 +11,7 @@ import {
   validatePhotoFreshness,
 } from '../common/upload/image-integrity.util';
 import { isUniqueConstraintError, softDeleteCatchData } from '../common/upload/catch-retention.util';
+import { computePerceptualHash, isNearDuplicate } from '../common/upload/image-phash.util';
 import { parsePageLimit } from '../common/pagination.util';
 
 function claimedLocation(body: { locationLat?: unknown; locationLng?: unknown }) {
@@ -47,10 +48,20 @@ export class CatchesService {
 
     const imageHash = await computeImageHash(file.path);
     await this.assertUniqueImageHash(imageHash, file.path);
+    const perceptualHash = await computePerceptualHash(file.path);
+    await this.assertUniquePerceptualHash(perceptualHash, file.path);
 
     const imageUrl = `/uploads/${file.filename}`;
 
-    const catch_ = await this.createCertifiedRow(userId, file.path, imageUrl, imageHash, body, freshness);
+    const catch_ = await this.createCertifiedRow(
+      userId,
+      file.path,
+      imageUrl,
+      imageHash,
+      perceptualHash,
+      body,
+      freshness,
+    );
 
     try {
       await this.runAiProcess(catch_.id, imageUrl);
@@ -92,6 +103,8 @@ export class CatchesService {
 
     const imageHash = await computeImageHash(file.path);
     await this.assertUniqueImageHash(imageHash, file.path);
+    const perceptualHash = await computePerceptualHash(file.path);
+    await this.assertUniquePerceptualHash(perceptualHash, file.path);
 
     const imageUrl = `/uploads/${file.filename}`;
 
@@ -106,6 +119,7 @@ export class CatchesService {
       file.path,
       imageUrl,
       imageHash,
+      perceptualHash,
       body,
       lengthCm,
       fishSpeciesId,
@@ -136,6 +150,7 @@ export class CatchesService {
     filePath: string,
     imageUrl: string,
     imageHash: string,
+    perceptualHash: string | null,
     body: { locationName?: string; memo?: string },
     freshness: { takenAt?: Date; exifLat?: number; exifLng?: number; integrityNote?: string },
   ) {
@@ -145,6 +160,7 @@ export class CatchesService {
           userId,
           imageUrl,
           imageHash,
+          perceptualHash,
           locationName: body.locationName,
           memo: body.memo,
           photoTakenAt: freshness.takenAt,
@@ -165,6 +181,7 @@ export class CatchesService {
     filePath: string,
     imageUrl: string,
     imageHash: string,
+    perceptualHash: string | null,
     body: { locationName?: string; memo?: string },
     lengthCm: number | null,
     fishSpeciesId: number | null,
@@ -175,6 +192,7 @@ export class CatchesService {
           userId,
           imageUrl,
           imageHash,
+          perceptualHash,
           locationName: body.locationName || null,
           memo: body.memo || null,
           recordType: 'personal',
@@ -206,8 +224,27 @@ export class CatchesService {
 
     await this.prisma.catch.update({
       where: { id: existing.id },
-      data: { imageHash: null },
+      data: { imageHash: null, perceptualHash: null },
     });
+  }
+
+  private async assertUniquePerceptualHash(perceptualHash: string | null, filePath: string) {
+    if (!perceptualHash) return;
+
+    const rows = await this.prisma.catch.findMany({
+      where: { deletedAt: null, perceptualHash: { not: null } },
+      select: { perceptualHash: true },
+    });
+
+    const duplicate = rows.some(
+      (row) => row.perceptualHash && isNearDuplicate(perceptualHash, row.perceptualHash),
+    );
+    if (!duplicate) return;
+
+    await removeUploadedFile(filePath);
+    throw new ConflictException(
+      '이미 등록된 사진과 매우 비슷한 사진입니다. 같은 사진을 조금 바꾼 재업로드는 허용되지 않습니다.',
+    );
   }
 
   private async rethrowDuplicateImage(error: unknown, filePath: string): Promise<never> {

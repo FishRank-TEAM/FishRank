@@ -1,6 +1,7 @@
 import { ConflictException, ServiceUnavailableException } from '@nestjs/common';
 import { CatchesService } from './catches.service';
 import { removeUploadedFile } from '../common/upload/image-integrity.util';
+import { computePerceptualHash } from '../common/upload/image-phash.util';
 
 jest.mock('../common/upload/image-integrity.util', () => ({
   computeImageHash: jest.fn().mockResolvedValue('hash-1'),
@@ -8,10 +9,19 @@ jest.mock('../common/upload/image-integrity.util', () => ({
   validatePhotoFreshness: jest.fn().mockResolvedValue({ ok: true }),
 }));
 
+jest.mock('../common/upload/image-phash.util', () => {
+  const actual = jest.requireActual('../common/upload/image-phash.util');
+  return {
+    ...actual,
+    computePerceptualHash: jest.fn().mockResolvedValue(null),
+  };
+});
+
 describe('CatchesService 이미지 해시', () => {
   const prisma = {
     catch: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -43,7 +53,7 @@ describe('CatchesService 이미지 해시', () => {
 
     expect(prisma.catch.update).toHaveBeenCalledWith({
       where: { id: 'old' },
-      data: { imageHash: null },
+      data: { imageHash: null, perceptualHash: null },
     });
     expect(prisma.certification.deleteMany).toHaveBeenCalledWith({ where: { catchId: 'new-catch' } });
     expect(prisma.catch.delete).toHaveBeenCalledWith({ where: { id: 'new-catch' } });
@@ -57,6 +67,51 @@ describe('CatchesService 이미지 해시', () => {
     await expect(service.createCertified('user-1', file, {})).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.catch.create).not.toHaveBeenCalled();
     expect(removeUploadedFile).toHaveBeenCalledWith(file.path);
+  });
+
+  it('살아있는 비슷한 사진은 충돌로 거절한다', async () => {
+    (computePerceptualHash as jest.Mock).mockResolvedValueOnce('0000000000000000');
+    prisma.catch.findFirst.mockResolvedValue(null);
+    prisma.catch.findMany.mockResolvedValue([{ perceptualHash: '0000000000000001' }]);
+
+    await expect(service.createCertified('user-1', file, {})).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.catch.create).not.toHaveBeenCalled();
+    expect(removeUploadedFile).toHaveBeenCalledWith(file.path);
+  });
+
+  it('삭제된 기록의 지각 해시는 비교하지 않고 새 해시를 저장한다', async () => {
+    (computePerceptualHash as jest.Mock).mockResolvedValueOnce('aaaaaaaaaaaaaaaa');
+    prisma.catch.findFirst.mockResolvedValue(null);
+    prisma.catch.findMany.mockResolvedValue([]);
+    prisma.catch.create.mockResolvedValue({ id: 'new-catch' });
+    prisma.catch.findUnique.mockResolvedValue({
+      id: 'new-catch',
+      status: 'approved',
+      certification: { grade: 'A', errorMessage: null },
+    });
+    aiService.analyze.mockResolvedValue({
+      ruleFlat: true,
+      ruleVertical: true,
+      ruleRuler: true,
+      ruleFullBody: true,
+      rulerDetected: true,
+      speciesConfidence: 0.9,
+      speciesDetected: null,
+      lengthCm: 30,
+    });
+
+    await service.createPersonal('user-1', file, { memo: '자랑' });
+
+    expect(prisma.catch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { deletedAt: null, perceptualHash: { not: null } },
+      }),
+    );
+    expect(prisma.catch.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ perceptualHash: 'aaaaaaaaaaaaaaaa' }),
+      }),
+    );
   });
 
   it('자랑 기록을 지우면 이미지 해시를 비운다', async () => {
