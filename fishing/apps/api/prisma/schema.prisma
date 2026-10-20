@@ -161,6 +161,10 @@ model Catch {
   locationLat   Decimal?  @map("location_lat") @db.Decimal(9, 6)
   locationLng   Decimal?  @map("location_lng") @db.Decimal(9, 6)
   locationName  String?   @map("location_name")
+  photoTakenAt  DateTime? @map("photo_taken_at")
+  exifLat       Decimal?  @map("exif_lat") @db.Decimal(9, 6)
+  exifLng       Decimal?  @map("exif_lng") @db.Decimal(9, 6)
+  integrityNote String?   @map("integrity_note") @db.VarChar(80)
   recordType    String    @default("certified") @map("record_type") // certified | personal
   status        String    @default("pending")
   memo          String?

@@ -13,6 +13,13 @@ import {
 import { isUniqueConstraintError, softDeleteCatchData } from '../common/upload/catch-retention.util';
 import { parsePageLimit } from '../common/pagination.util';
 
+function claimedLocation(body: { locationLat?: unknown; locationLng?: unknown }) {
+  const lat = Number(body.locationLat);
+  const lng = Number(body.locationLng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return undefined;
+  return { lat, lng };
+}
+
 
 
 @Injectable()
@@ -32,7 +39,7 @@ export class CatchesService {
       throw new BadRequestException('사진 파일이 필요합니다.');
     }
 
-    const freshness = await validatePhotoFreshness(file.path);
+    const freshness = await validatePhotoFreshness(file.path, undefined, claimedLocation(body));
     if (!freshness.ok) {
       await removeUploadedFile(file.path);
       throw new BadRequestException(freshness.reason);
@@ -43,7 +50,7 @@ export class CatchesService {
 
     const imageUrl = `/uploads/${file.filename}`;
 
-    const catch_ = await this.createCertifiedRow(userId, file.path, imageUrl, imageHash, body);
+    const catch_ = await this.createCertifiedRow(userId, file.path, imageUrl, imageHash, body, freshness);
 
     try {
       await this.runAiProcess(catch_.id, imageUrl);
@@ -130,6 +137,7 @@ export class CatchesService {
     imageUrl: string,
     imageHash: string,
     body: { locationName?: string; memo?: string },
+    freshness: { takenAt?: Date; exifLat?: number; exifLng?: number; integrityNote?: string },
   ) {
     try {
       return await this.prisma.catch.create({
@@ -139,6 +147,10 @@ export class CatchesService {
           imageHash,
           locationName: body.locationName,
           memo: body.memo,
+          photoTakenAt: freshness.takenAt,
+          exifLat: freshness.exifLat,
+          exifLng: freshness.exifLng,
+          integrityNote: freshness.integrityNote,
           recordType: 'certified',
           status: 'pending',
         },
