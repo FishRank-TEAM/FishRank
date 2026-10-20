@@ -538,7 +538,7 @@ export class AdminService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
 
-    if (dto.role === 'user' && user.role === 'admin') {
+    if (dto.role && dto.role !== 'admin' && user.role === 'admin') {
       const adminCount = await this.prisma.user.count({
         where: { role: 'admin', deletedAt: null, id: { not: userId } },
       });

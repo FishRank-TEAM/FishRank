@@ -143,15 +143,16 @@ export class TournamentsService {
     return { codeDate, code: row?.code ?? null };
   }
 
-  async setTodayDayCode(adminId: string, tournamentId: string, rawCode: string, now = new Date()) {
-    const admin = await this.prisma.user.findUnique({ where: { id: adminId } });
-    if (admin?.role !== 'admin') throw new ForbiddenException('관리자만 대회 코드를 등록할 수 있습니다.');
+  async setTodayDayCode(actorId: string, tournamentId: string, rawCode: string, now = new Date()) {
+    const actor = await this.prisma.user.findUnique({ where: { id: actorId } });
+    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
+    const isAdmin = actor?.role === 'admin';
+    const isOwner = actor?.role === 'organizer' && tournament.organizerId === actorId;
+    if (!isAdmin && !isOwner) throw new ForbiddenException('이 대회의 코드를 등록할 수 없습니다.');
 
     const code = normalizeDayCode(rawCode);
     if (!code) throw new BadRequestException('대회 코드는 4~12자의 영문 또는 숫자여야 합니다.');
-
-    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
-    if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
 
     const codeDate = seoulDateKey(now);
     return this.prisma.tournamentDayCode.upsert({
@@ -188,4 +189,100 @@ export class TournamentsService {
 
     return { claimedTournamentId: tournamentId, claimedDayCode: code, dayCodeStatus: 'pending' };
   }
+
+  async listOrganized(userId: string) {
+    await this.assertOrganizer(userId);
+    return this.prisma.tournament.findMany({
+      where: { organizerId: userId },
+      include: { _count: { select: { entries: true } } },
+      orderBy: { startAt: 'desc' },
+    });
+  }
+
+  async createForOrganizer(userId: string, dto: OrganizerTournamentWrite) {
+    await this.assertOrganizer(userId);
+    this.assertFreeEntry(dto);
+    const data = this.organizerTournamentData(dto);
+    return this.prisma.tournament.create({
+      data: { ...data, organizerId: userId, isFree: true, entryFee: 0 },
+    });
+  }
+
+  async updateForOrganizer(userId: string, id: string, dto: OrganizerTournamentWrite) {
+    const actor = await this.assertOrganizer(userId);
+    const tournament = await this.prisma.tournament.findUnique({ where: { id } });
+    if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
+    if (actor.role !== 'admin' && tournament.organizerId !== userId) {
+      throw new ForbiddenException('본인이 연 대회만 수정할 수 있습니다.');
+    }
+    this.assertFreeEntry(dto);
+    return this.prisma.tournament.update({
+      where: { id },
+      data: { ...this.organizerTournamentData(dto), isFree: true, entryFee: 0 },
+    });
+  }
+
+  private async assertOrganizer(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || (user.role !== 'organizer' && user.role !== 'admin')) {
+      throw new ForbiddenException('대회 운영자만 사용할 수 있습니다.');
+    }
+    return user;
+  }
+
+  private assertFreeEntry(dto: { entryFee?: number; isFree?: boolean }) {
+    if ((dto.entryFee ?? 0) > 0 || dto.isFree === false) {
+      throw new BadRequestException('참가비는 아직 받을 수 없습니다. 상은 후원으로 안내해 주세요.');
+    }
+  }
+
+  private organizerTournamentData(dto: OrganizerTournamentWrite) {
+    const startAt = new Date(dto.startAt);
+    const endAt = new Date(dto.endAt);
+    if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt <= startAt) {
+      throw new BadRequestException('대회 기간이 올바르지 않습니다.');
+    }
+    const minLengthCm = dto.minLengthCm ?? null;
+    const maxLengthCm = dto.maxLengthCm ?? null;
+    if (minLengthCm != null && maxLengthCm != null && minLengthCm > maxLengthCm) {
+      throw new BadRequestException('최소 체장이 최대 체장보다 클 수 없습니다.');
+    }
+    return {
+      title: dto.title.trim(),
+      description: dto.description.trim(),
+      category: dto.category,
+      fishSpeciesId: dto.fishSpeciesId ?? null,
+      region: dto.region?.trim() || null,
+      minLengthCm,
+      maxLengthCm,
+      prize: dto.prize?.trim() || null,
+      prizeAmount: dto.prizeAmount ?? null,
+      sponsorName: dto.sponsorName?.trim() || null,
+      maxEntries: dto.maxEntries ?? null,
+      startAt,
+      endAt,
+      rules: dto.rules?.trim() || null,
+      status: dto.status || 'upcoming',
+    };
+  }
 }
+
+type OrganizerTournamentWrite = {
+  title: string;
+  description: string;
+  category: string;
+  fishSpeciesId?: number | null;
+  region?: string | null;
+  minLengthCm?: number | null;
+  maxLengthCm?: number | null;
+  prize?: string | null;
+  prizeAmount?: number | null;
+  sponsorName?: string | null;
+  maxEntries?: number | null;
+  startAt: string;
+  endAt: string;
+  rules?: string | null;
+  status?: string;
+  entryFee?: number;
+  isFree?: boolean;
+};

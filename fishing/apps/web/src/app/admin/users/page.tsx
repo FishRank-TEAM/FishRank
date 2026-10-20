@@ -9,6 +9,7 @@ import { formatTimeAgo } from '@/lib/utils';
 const ROLE_FILTERS = [
   { value: 'all', label: '전체 역할' },
   { value: 'user', label: '일반' },
+  { value: 'organizer', label: '대회 운영' },
   { value: 'admin', label: '관리자' },
 ];
 
@@ -202,24 +203,19 @@ export default function AdminUsersPage() {
                 <div><strong>{detail.user._count.userFeedbacks}</strong><span>피드백</span></div>
               </div>
 
+              <label className="admin-muted">
+                역할
+                <select
+                  className="admin-select-sm"
+                  value={detail.user.role}
+                  onChange={(e) => updateMutation.mutate({ id: detail.user.id, role: e.target.value })}
+                >
+                  <option value="user">일반 회원</option>
+                  <option value="organizer">대회 운영</option>
+                  <option value="admin">관리자</option>
+                </select>
+              </label>
               <div className="admin-row-actions">
-                {detail.user.role === 'admin' ? (
-                  <button
-                    type="button"
-                    className="admin-btn-ghost"
-                    onClick={() => updateMutation.mutate({ id: detail.user.id, role: 'user' })}
-                  >
-                    일반 회원으로
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="admin-btn-primary"
-                    onClick={() => updateMutation.mutate({ id: detail.user.id, role: 'admin' })}
-                  >
-                    관리자 승급
-                  </button>
-                )}
                 {detail.user.deletedAt ? (
                   <button
                     type="button"
