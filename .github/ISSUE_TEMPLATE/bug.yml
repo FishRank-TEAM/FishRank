@@ -1,0 +1,32 @@
+name: 버그
+description: 기대와 다르게 동작하는 문제를 적습니다.
+title: "fix: "
+labels: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 무슨 문제인가요
+      description: 한 줄로 적어도 됩니다.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 방법
+      description: 웹, API, 모바일, AI 중 어디인지와 누른 순서를 적습니다.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 결과
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 결과
+      description: 에러 메시지와 스크린샷이 있으면 붙입니다.
+    validations:
+      required: true
