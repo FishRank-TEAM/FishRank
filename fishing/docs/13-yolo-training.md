@@ -71,7 +71,7 @@ ai/data/ruler_catches/
 ### 옵션
 
 ```bash
-py -3.12 ai/training/build_dataset.py \
+node scripts/py.mjs ai/training/build_dataset.py \
   --images-per-class 100 \
   --val-ratio 0.2 \
   --output ai/dataset
@@ -88,13 +88,13 @@ npm run ai:train
 GPU (권장):
 
 ```bash
-py -3.12 ai/training/train.py --device cuda --epochs 50 --batch 64
+node scripts/py.mjs ai/training/train.py --device cuda --epochs 50 --batch 64
 ```
 
 CPU (로컬 테스트):
 
 ```bash
-py -3.12 ai/training/train.py --device cpu --epochs 30 --batch 16
+node scripts/py.mjs ai/training/train.py --device cpu --epochs 30 --batch 16
 ```
 
 출력: `ai/models/fish_classifier/weights/best.pt`

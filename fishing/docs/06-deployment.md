@@ -37,7 +37,7 @@ cd ..
 ### 2. 환경변수 설정
 
 ```bash
-cp apps/web/.env.example apps/web/.env.local
+cp apps/web/.env.example apps/web/.env
 cp apps/api/.env.example apps/api/.env
 cp ai/.env.example ai/.env
 ```
@@ -45,26 +45,25 @@ cp ai/.env.example ai/.env
 ### 3. Docker로 DB + Redis 실행
 
 ```bash
-docker-compose up -d
+npm run db:up
 ```
 
 ### 4. DB 마이그레이션
 
 ```bash
-cd apps/api
-pnpm prisma migrate dev
-pnpm prisma db seed    # 어종 초기 데이터 투입
+# fishing/ 에서
+npm exec --prefix apps/api prisma migrate deploy
+npm run db:seed
 ```
 
 ### 5. 서버 실행
 
 ```bash
-# 터미널 1 - 프론트 + 백엔드 동시 실행
-pnpm dev
+# fishing/ 에서. 웹 :3000, API :4000
+npm run dev
 
-# 터미널 2 - AI 서버
-cd ai
-uvicorn main:app --reload --port 8000
+# AI 서버. Python 3.12를 찾습니다.
+npm run ai
 ```
 
 ---
@@ -221,16 +220,12 @@ S3 + CloudFront (이미지 CDN)
 ### 배포 스크립트
 
 ```bash
-# NestJS 빌드 + 배포
-cd apps/api
-pnpm build
-# PM2로 실행
-pm2 start dist/main.js --name fishrank-api
+# fishing/ 에서
+npm run build --prefix apps/api
+pm2 start apps/api/dist/main.js --name fishrank-api
 
-# Next.js 빌드 + 배포
-cd apps/web
-pnpm build
-pm2 start "pnpm start" --name fishrank-web
+npm run build --prefix apps/web
+pm2 start "npm run start --prefix apps/web" --name fishrank-web
 
 # FastAPI 배포
 cd ai
@@ -257,8 +252,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: pnpm install
-      - run: pnpm --filter api build
+      - run: npm ci
+        working-directory: fishing
+      - run: npm run build --prefix apps/api
+        working-directory: fishing
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1
         with:
@@ -266,10 +263,10 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_KEY }}
           script: |
-            cd /app/fishrank
+            cd /app/fishrank/fishing
             git pull origin main
-            pnpm install
-            pnpm --filter api build
+            npm ci
+            npm run build --prefix apps/api
             pm2 restart fishrank-api
 ```
 

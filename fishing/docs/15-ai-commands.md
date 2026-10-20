@@ -147,7 +147,7 @@ npm run ai:eval
 ## `crawl_images.py` 플래그
 
 ```bash
-py -3.12 -u ai/training/crawl_images.py [옵션]
+node scripts/py.mjs -u ai/training/crawl_images.py [옵션]
 ```
 
 | 플래그 | 기본값 | 설명 |
@@ -184,7 +184,7 @@ py -3.12 -u ai/training/crawl_images.py [옵션]
 ## `build_dataset.py` 플래그
 
 ```bash
-py -3.12 ai/training/build_dataset.py [옵션]
+node scripts/py.mjs ai/training/build_dataset.py [옵션]
 ```
 
 | 플래그 | 기본값 | 설명 |
@@ -210,7 +210,7 @@ py -3.12 ai/training/build_dataset.py [옵션]
 ## `train.py` 플래그
 
 ```bash
-py -3.12 ai/training/train.py [옵션]
+node scripts/py.mjs ai/training/train.py [옵션]
 ```
 
 | 플래그 | 기본값 | 설명 |
@@ -228,7 +228,7 @@ py -3.12 ai/training/train.py [옵션]
 ## `evaluate.py` 플래그
 
 ```bash
-py -3.12 ai/training/evaluate.py [옵션]
+node scripts/py.mjs ai/training/evaluate.py [옵션]
 ```
 
 | 플래그 | 기본값 | 설명 |
@@ -242,7 +242,7 @@ py -3.12 ai/training/evaluate.py [옵션]
 ## `purge_bing_crawl.py` 플래그
 
 ```bash
-py -3.12 ai/training/purge_bing_crawl.py [옵션]
+node scripts/py.mjs ai/training/purge_bing_crawl.py [옵션]
 ```
 
 | 플래그 | 기본값 | 설명 |

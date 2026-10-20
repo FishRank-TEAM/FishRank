@@ -136,13 +136,13 @@ CLIP_MIN_SCORE=0.08
 
 ```bash
 # 배스(1번)는 이미 충분 → 2번째 어종부터
-py -3.12 -u ai/training/crawl_images.py --core-only --start 2
+node scripts/py.mjs -u ai/training/crawl_images.py --core-only --start 2
 
 # 특정 어종만
-py -3.12 -u ai/training/crawl_images.py --species red_seabream
+node scripts/py.mjs -u ai/training/crawl_images.py --species red_seabream
 
 # Bing 없이 안정적으로
-py -3.12 -u ai/training/crawl_images.py --core-only --sources inat,gbif,commons
+node scripts/py.mjs -u ai/training/crawl_images.py --core-only --sources inat,gbif,commons
 ```
 
 저장 위치:
