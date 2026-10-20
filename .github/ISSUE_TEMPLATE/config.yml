@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 로컬 실행 가이드
+    url: https://github.com/FishRank-TEAM/FishRank/blob/main/fishing/docs/11-local-development.md
+    about: 설치와 포트, 환경 변수

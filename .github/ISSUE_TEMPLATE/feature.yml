@@ -1,0 +1,24 @@
+name: 기능 제안
+description: 새로 만들거나 바꾸고 싶은 동작을 적습니다.
+title: "feat: "
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 어떤 상황이 불편한가요
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 범위
+      description: 웹, API, 모바일, AI 중 어디인지. 랭킹 점수나 결제처럼 제품 의미가 바뀌면 그 점을 적습니다.
+    validations:
+      required: false
