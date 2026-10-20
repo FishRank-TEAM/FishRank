@@ -6,6 +6,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AdminService } from './admin.service';
 import { ReviewCatchDto } from './dto/review-catch.dto';
 import { ReviewDayCodeDto } from './dto/review-day-code.dto';
+import { ResolveReportDto } from './dto/resolve-report.dto';
 import { UpsertAnnouncementDto } from './dto/upsert-announcement.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -97,10 +98,10 @@ export class AdminController {
   }
 
   @Get('reports/flagged')
-  @ApiOperation({ summary: '신고 3건 이상 콘텐츠 (신고 수 내림차순)' })
+  @ApiOperation({ summary: '열린 신고 콘텐츠 (기본 1건부터, 신고 수 내림차순)' })
   @ApiQuery({ name: 'minCount', required: false })
-  async listFlaggedReports(@Query('minCount') minCount = '3') {
-    const data = await this.admin.listFlaggedReports(Number(minCount) || 3);
+  async listFlaggedReports(@Query('minCount') minCount = '1') {
+    const data = await this.admin.listFlaggedReports(Number(minCount) || 1);
     return { success: true, data };
   }
 
@@ -109,9 +110,9 @@ export class AdminController {
   async resolveFlaggedReport(
     @Param('targetType') targetType: 'catch' | 'post',
     @Param('targetId') targetId: string,
-    @Body() body: { action: 'dismiss' | 'delete' },
+    @Body() body: ResolveReportDto,
   ) {
-    const data = await this.admin.resolveFlaggedReport(targetType, targetId, body.action);
+    const data = await this.admin.resolveFlaggedReport(targetType, targetId, body.action, body.adminNote);
     return { success: true, data };
   }
 

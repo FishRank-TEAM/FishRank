@@ -208,9 +208,11 @@ model ContentReport {
   targetId   String   @map("target_id")
   reporterId String   @map("reporter_id")
   reason     String   @db.VarChar(100)
-  detail     String?  @db.VarChar(500)
-  status     String   @default("open") // open | dismissed | resolved
-  createdAt  DateTime @default(now()) @map("created_at")
+  detail     String?   @db.VarChar(500)
+  status     String    @default("open") // open | dismissed | resolved
+  adminNote  String?   @map("admin_note") @db.VarChar(500)
+  resolvedAt DateTime? @map("resolved_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
 

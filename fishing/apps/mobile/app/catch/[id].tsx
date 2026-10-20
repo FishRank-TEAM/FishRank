@@ -10,12 +10,14 @@ import { RecordStatusBadge, GradeBadge } from '@/components/ui/StatusBadge';
 import { getImageUrl } from '@/lib/images';
 import { formatLength, formatTimeAgo } from '@/lib/format';
 import { colors } from '@/theme/colors';
+import { useAuthStore } from '@/store/auth.store';
 import { text } from '@/theme/text';
 import { radius, spacing } from '@/theme/layout';
 
 export default function CatchDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const me = useAuthStore((s) => s.user);
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['catch', id],
@@ -90,6 +92,21 @@ export default function CatchDetailScreen() {
           <InfoRow label="장소" value={data.locationName ?? '미입력'} />
           {data.memo ? <InfoRow label="메모" value={data.memo} /> : null}
 
+          {me && data.user?.id && me.id !== data.user.id ? (
+            <Pressable
+              style={styles.reportBtn}
+              onPress={() => {
+                Alert.alert('기록 신고', '사유를 선택하세요', [
+                  { text: '취소', style: 'cancel' },
+                  { text: '허위 기록', onPress: () => submitReport('허위 기록') },
+                  { text: '사진 도용', onPress: () => submitReport('사진 도용') },
+                ]);
+              }}
+            >
+              <Text style={styles.reportBtnText}>신고</Text>
+            </Pressable>
+          ) : null}
+
           {data.recordType === 'personal' ? (
             <Pressable
               style={styles.voteBtn}
@@ -109,6 +126,15 @@ export default function CatchDetailScreen() {
       </Screen>
     </>
   );
+
+  async function submitReport(reason: string) {
+    try {
+      await api.post('/reports', { targetType: 'catch', targetId: id, reason });
+      Alert.alert('신고 접수', '관리자가 확인합니다.');
+    } catch {
+      Alert.alert('신고 실패', '이미 신고했거나 로그인 상태를 확인해 주세요.');
+    }
+  }
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -176,4 +202,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   voteBtnText: { ...text.bold(15), color: '#fff' },
+  reportBtn: {
+    marginTop: spacing.md,
+    alignSelf: 'flex-start',
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  reportBtnText: { ...text.bold(13), color: colors.textMuted },
 });

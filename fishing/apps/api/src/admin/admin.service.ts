@@ -26,7 +26,7 @@ export class AdminService {
       totalUsers,
     ] = await Promise.all([
       this.prisma.catch.count({ where: { deletedAt: null, status: 'pending', recordType: 'certified' } }),
-      this.countFlaggedReports(3),
+      this.countFlaggedReports(1),
       this.prisma.userFeedback.count({ where: { status: 'open' } }),
       this.prisma.catch.count({ where: { deletedAt: null } }),
       this.prisma.post.count({ where: { deletedAt: null } }),
@@ -46,7 +46,7 @@ export class AdminService {
       take: 5,
     });
 
-    const recentFlagged = await this.listFlaggedReports(3, 5);
+    const recentFlagged = await this.listFlaggedReports(1, 5);
 
     const recentPosts = await this.prisma.post.findMany({
       where: { deletedAt: null },
@@ -79,7 +79,7 @@ export class AdminService {
     };
   }
 
-  async countFlaggedReports(minCount = 3) {
+  async countFlaggedReports(minCount = 1) {
     const rows = await this.prisma.$queryRaw<Array<{ count: bigint }>>`
       SELECT COUNT(*)::bigint AS count
       FROM (
@@ -93,7 +93,7 @@ export class AdminService {
     return Number(rows[0]?.count ?? 0);
   }
 
-  async listFlaggedReports(minCount = 3, limit = 50) {
+  async listFlaggedReports(minCount = 1, limit = 50) {
     const rows = await this.prisma.$queryRaw<
       Array<{ target_type: string; target_id: string; report_count: number }>
     >`
@@ -155,7 +155,12 @@ export class AdminService {
     targetType: 'catch' | 'post',
     targetId: string,
     action: 'dismiss' | 'delete',
+    adminNote?: string,
   ) {
+    const resolution = {
+      adminNote: adminNote?.trim() || null,
+      resolvedAt: new Date(),
+    };
     if (action === 'delete') {
       if (targetType === 'catch') {
         const catch_ = await this.prisma.catch.findUnique({ where: { id: targetId, deletedAt: null } });
@@ -174,14 +179,14 @@ export class AdminService {
       }
       await this.prisma.contentReport.updateMany({
         where: { targetType, targetId, status: 'open' },
-        data: { status: 'resolved' },
+        data: { status: 'resolved', ...resolution },
       });
       return { action, targetType, targetId };
     }
 
     await this.prisma.contentReport.updateMany({
       where: { targetType, targetId, status: 'open' },
-      data: { status: 'dismissed' },
+      data: { status: 'dismissed', ...resolution },
     });
     return { action, targetType, targetId };
   }
