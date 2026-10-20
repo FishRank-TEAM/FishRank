@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 
@@ -9,6 +10,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { TournamentsService } from './tournaments.service';
 import { SetDayCodeDto } from './dto/set-day-code.dto';
 import { OrganizerTournamentDto } from './dto/organizer-tournament.dto';
+import { SetParticipantDto } from './dto/set-participant.dto';
 
 import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload/upload.config';
 import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
@@ -98,6 +100,40 @@ export class TournamentsController {
   async updateOrganized(@Param('id') id: string, @CurrentUser() user: any, @Body() body: OrganizerTournamentDto) {
     const result = await this.tournamentsService.updateForOrganizer(user.id, id, body);
     return { success: true, data: result };
+  }
+
+  @Get('organized/:id/participants')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '대회 참가자. 실격은 삭제하지 않음' })
+  async listParticipants(@Param('id') id: string, @CurrentUser() user: any) {
+    const result = await this.tournamentsService.listParticipants(user.id, id);
+    return { success: true, data: result };
+  }
+
+  @Patch('organized/:id/participants/:userId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '참가자 실격 또는 복귀' })
+  async setParticipant(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @CurrentUser() user: any,
+    @Body() body: SetParticipantDto,
+  ) {
+    const result = await this.tournamentsService.setDisqualified(user.id, id, userId, body.disqualified, body.note);
+    return { success: true, data: result };
+  }
+
+  @Get('organized/:id/export')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '실시간 순위 CSV' })
+  async exportLeaderboard(@Param('id') id: string, @CurrentUser() user: any, @Res({ passthrough: true }) res: Response) {
+    const csv = await this.tournamentsService.exportLeaderboard(user.id, id);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="tournament-${id}.csv"`);
+    return `\uFEFF${csv}`;
   }
 
   @Get(':id')

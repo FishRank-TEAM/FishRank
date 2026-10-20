@@ -360,6 +360,8 @@ model TournamentEntry {
   bestLengthCm   Decimal?  @map("best_length_cm") @db.Decimal(5, 1)
   bestCatchId    String?   @map("best_catch_id")
   rank           Int?
+  disqualified   Boolean   @default(false)
+  disqualifyNote String?   @map("disqualify_note") @db.VarChar(200)
   joinedAt       DateTime  @default(now()) @map("joined_at")
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])

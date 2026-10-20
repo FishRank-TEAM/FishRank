@@ -27,6 +27,7 @@ export default function OrganizeTournamentPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState(EMPTY);
   const [message, setMessage] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['organized-tournaments'],
@@ -64,6 +65,28 @@ export default function OrganizeTournamentPage() {
       setMessage(Array.isArray(apiMessage) ? apiMessage.join(', ') : apiMessage || '대회를 만들지 못했습니다.');
     },
   });
+
+  const { data: participants } = useQuery({
+    queryKey: ['tournament-participants', openId],
+    queryFn: async () => (await api.get(`/tournaments/organized/${openId}/participants`)).data.data,
+    enabled: !!openId,
+  });
+
+  const disqualifyMutation = useMutation({
+    mutationFn: ({ tournamentId, userId, disqualified }: { tournamentId: string; userId: string; disqualified: boolean }) =>
+      api.patch(`/tournaments/organized/${tournamentId}/participants/${userId}`, { disqualified }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tournament-participants', openId] }),
+  });
+
+  async function downloadCsv(id: string) {
+    const res = await api.get(`/tournaments/organized/${id}/export`, { responseType: 'blob' });
+    const url = URL.createObjectURL(res.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tournament-${id}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   const set = (key: keyof typeof EMPTY) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
@@ -116,14 +139,41 @@ export default function OrganizeTournamentPage() {
             <p className="admin-muted">아직 없습니다.</p>
           ) : (
             data.map((tournament: { id: string; title: string; region?: string | null; sponsorName?: string | null; status: string }) => (
-              <p key={tournament.id}>
-                <Link href={`/tournament/${tournament.id}`}>{tournament.title}</Link>
-                <span className="admin-muted">
-                  {' '}· {tournament.status}
-                  {tournament.region ? ` · ${tournament.region}` : ''}
-                  {tournament.sponsorName ? ` · ${tournament.sponsorName}` : ''}
-                </span>
-              </p>
+              <div key={tournament.id}>
+                <p>
+                  <Link href={`/tournament/${tournament.id}`}>{tournament.title}</Link>
+                  <span className="admin-muted">
+                    {' '}· {tournament.status}
+                    {tournament.region ? ` · ${tournament.region}` : ''}
+                    {tournament.sponsorName ? ` · ${tournament.sponsorName}` : ''}
+                  </span>
+                </p>
+                <div className="admin-row-actions">
+                  <button type="button" className="admin-btn-ghost" onClick={() => downloadCsv(tournament.id)}>결과 CSV</button>
+                  <button type="button" className="admin-btn-ghost" onClick={() => setOpenId(openId === tournament.id ? null : tournament.id)}>참가자</button>
+                </div>
+                {openId === tournament.id && (
+                  <ul>
+                    {(participants ?? []).map((entry: { id: string; userId: string; disqualified: boolean; user: { nickname: string } }) => (
+                      <li key={entry.id}>
+                        {entry.user.nickname}
+                        {entry.disqualified ? ' · 실격' : ''}
+                        <button
+                          type="button"
+                          className="admin-btn-ghost"
+                          onClick={() => disqualifyMutation.mutate({
+                            tournamentId: tournament.id,
+                            userId: entry.userId,
+                            disqualified: !entry.disqualified,
+                          })}
+                        >
+                          {entry.disqualified ? '복귀' : '실격'}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             ))
           )}
         </section>
