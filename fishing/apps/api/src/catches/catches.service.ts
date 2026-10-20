@@ -13,6 +13,7 @@ import {
 import { isUniqueConstraintError, softDeleteCatchData } from '../common/upload/catch-retention.util';
 import { computePerceptualHash, isNearDuplicate } from '../common/upload/image-phash.util';
 import { parsePageLimit } from '../common/pagination.util';
+import { TournamentsService } from '../tournaments/tournaments.service';
 
 function claimedLocation(body: { locationLat?: unknown; locationLng?: unknown }) {
   const lat = Number(body.locationLat);
@@ -30,6 +31,7 @@ export class CatchesService {
   constructor(
     private prisma: PrismaService,
     private aiService: AiService,
+    private tournaments: TournamentsService,
   ) {}
 
 
@@ -51,6 +53,14 @@ export class CatchesService {
     const perceptualHash = await computePerceptualHash(file.path);
     await this.assertUniquePerceptualHash(perceptualHash, file.path);
 
+    let claim;
+    try {
+      claim = await this.tournaments.resolveDayCodeClaim(userId, body);
+    } catch (error) {
+      await removeUploadedFile(file.path);
+      throw error;
+    }
+
     const imageUrl = `/uploads/${file.filename}`;
 
     const catch_ = await this.createCertifiedRow(
@@ -61,6 +71,7 @@ export class CatchesService {
       perceptualHash,
       body,
       freshness,
+      claim,
     );
 
     try {
@@ -153,6 +164,7 @@ export class CatchesService {
     perceptualHash: string | null,
     body: { locationName?: string; memo?: string },
     freshness: { takenAt?: Date; exifLat?: number; exifLng?: number; integrityNote?: string },
+    claim: { claimedTournamentId: string | null; claimedDayCode: string | null; dayCodeStatus: string | null },
   ) {
     try {
       return await this.prisma.catch.create({
@@ -161,6 +173,9 @@ export class CatchesService {
           imageUrl,
           imageHash,
           perceptualHash,
+          claimedTournamentId: claim.claimedTournamentId,
+          claimedDayCode: claim.claimedDayCode,
+          dayCodeStatus: claim.dayCodeStatus,
           locationName: body.locationName,
           memo: body.memo,
           photoTakenAt: freshness.takenAt,

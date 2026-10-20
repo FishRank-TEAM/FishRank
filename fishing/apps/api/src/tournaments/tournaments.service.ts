@@ -1,5 +1,18 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeDayCode, seoulDateKey } from './day-code.util';
+
+export type DayCodeClaim = {
+  claimedTournamentId: string | null;
+  claimedDayCode: string | null;
+  dayCodeStatus: string | null;
+};
+
+const EMPTY_DAY_CODE_CLAIM: DayCodeClaim = {
+  claimedTournamentId: null,
+  claimedDayCode: null,
+  dayCodeStatus: null,
+};
 
 @Injectable()
 export class TournamentsService {
@@ -118,5 +131,61 @@ export class TournamentsService {
     ]);
 
     return { deleted: true };
+  }
+
+  async getTodayDayCode(tournamentId: string, now = new Date()) {
+    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
+    const codeDate = seoulDateKey(now);
+    const row = await this.prisma.tournamentDayCode.findUnique({
+      where: { tournamentId_codeDate: { tournamentId, codeDate } },
+    });
+    return { codeDate, code: row?.code ?? null };
+  }
+
+  async setTodayDayCode(adminId: string, tournamentId: string, rawCode: string, now = new Date()) {
+    const admin = await this.prisma.user.findUnique({ where: { id: adminId } });
+    if (admin?.role !== 'admin') throw new ForbiddenException('관리자만 대회 코드를 등록할 수 있습니다.');
+
+    const code = normalizeDayCode(rawCode);
+    if (!code) throw new BadRequestException('대회 코드는 4~12자의 영문 또는 숫자여야 합니다.');
+
+    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
+
+    const codeDate = seoulDateKey(now);
+    return this.prisma.tournamentDayCode.upsert({
+      where: { tournamentId_codeDate: { tournamentId, codeDate } },
+      create: { tournamentId, codeDate, code },
+      update: { code },
+    });
+  }
+
+  async resolveDayCodeClaim(userId: string, body: { tournamentId?: unknown; dayCode?: unknown }, now = new Date()): Promise<DayCodeClaim> {
+    const tournamentId = typeof body.tournamentId === 'string' ? body.tournamentId.trim() : '';
+    const rawCode = typeof body.dayCode === 'string' ? body.dayCode : '';
+    if (!tournamentId && !rawCode.trim()) return EMPTY_DAY_CODE_CLAIM;
+    if (!tournamentId || !rawCode.trim()) {
+      throw new BadRequestException('대회와 오늘의 코드를 함께 보내야 합니다.');
+    }
+
+    const code = normalizeDayCode(rawCode);
+    if (!code) throw new BadRequestException('대회 코드는 4~12자의 영문 또는 숫자여야 합니다.');
+
+    const entry = await this.prisma.tournamentEntry.findUnique({
+      where: { tournamentId_userId: { tournamentId, userId } },
+    });
+    if (!entry || (entry.paymentStatus !== 'free' && entry.paymentStatus !== 'paid')) {
+      throw new BadRequestException('참가 중인 대회만 코드를 제출할 수 있습니다.');
+    }
+
+    const codeDate = seoulDateKey(now);
+    const stored = await this.prisma.tournamentDayCode.findUnique({
+      where: { tournamentId_codeDate: { tournamentId, codeDate } },
+    });
+    if (!stored) throw new BadRequestException('오늘 대회 코드가 아직 없습니다.');
+    if (stored.code !== code) throw new BadRequestException('대회 코드가 맞지 않습니다.');
+
+    return { claimedTournamentId: tournamentId, claimedDayCode: code, dayCodeStatus: 'pending' };
   }
 }

@@ -5,6 +5,7 @@ import { AdminGuard } from '../common/guards/admin.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AdminService } from './admin.service';
 import { ReviewCatchDto } from './dto/review-catch.dto';
+import { ReviewDayCodeDto } from './dto/review-day-code.dto';
 import { UpsertAnnouncementDto } from './dto/upsert-announcement.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -43,6 +44,13 @@ export class AdminController {
   @ApiOperation({ summary: '인증 기록 승인/반려' })
   async reviewCatch(@Param('id') id: string, @Body() dto: ReviewCatchDto) {
     const data = await this.admin.reviewCatch(id, dto);
+    return { success: true, data };
+  }
+
+  @Patch('catches/:id/day-code')
+  @ApiOperation({ summary: '대회 일일 코드 수동 확인. 랭킹 상태는 바꾸지 않음' })
+  async reviewDayCode(@Param('id') id: string, @Body() dto: ReviewDayCodeDto) {
+    const data = await this.admin.reviewDayCode(id, dto.status);
     return { success: true, data };
   }
 
