@@ -37,6 +37,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CatchesService } from './catches.service';
 
 import { createImageUploadInterceptor } from '../common/upload/upload.config';
+import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
 import { assertAppUploadChannel } from '../common/upload/upload-channel.util';
 import { UpdatePersonalCatchDto } from './dto/update-personal-catch.dto';
 
@@ -64,7 +65,7 @@ export class CatchesController {
 
   @HttpCode(202)
 
-  @UseInterceptors(createImageUploadInterceptor('image', 'catch'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'catch'), ImageMagicInterceptor)
 
   async createCertified(
 
@@ -100,7 +101,7 @@ export class CatchesController {
 
   @HttpCode(201)
 
-  @UseInterceptors(createImageUploadInterceptor('image', 'personal'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'personal'), ImageMagicInterceptor)
 
   async createPersonal(
 

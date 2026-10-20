@@ -27,6 +27,7 @@ import { UpdateFeaturedCatchesDto } from './dto/update-featured-catches.dto';
 import { UpsertUserGearDto } from './dto/upsert-user-gear.dto';
 
 import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload/upload.config';
+import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
 
 
 
@@ -122,7 +123,7 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: '프로필 사진 변경' })
-  @UseInterceptors(createImageUploadInterceptor('image', 'profile'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'profile'), ImageMagicInterceptor)
   async updateProfileImage(
     @CurrentUser() user: any,
     @UploadedFile() file: Express.Multer.File | undefined,
@@ -172,7 +173,7 @@ export class UsersController {
 
   @ApiOperation({ summary: '내 장비 등록 (최대 6개)' })
 
-  @UseInterceptors(createImageUploadInterceptor('image', 'gear'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'gear'), ImageMagicInterceptor)
 
   async createGear(
 
@@ -210,7 +211,7 @@ export class UsersController {
 
   @ApiOperation({ summary: '내 장비 수정' })
 
-  @UseInterceptors(createImageUploadInterceptor('image', 'gear'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'gear'), ImageMagicInterceptor)
 
   async updateGear(
 

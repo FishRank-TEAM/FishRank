@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiTags } from '@ne
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload/upload.config';
+import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
 import { isEncyclopediaSort, isEncyclopediaTechnique } from './encyclopedia-filter.util';
 import { EncyclopediaService } from './encyclopedia.service';
 import { CreateEncyclopediaTipDto } from './dto/create-encyclopedia-tip.dto';
@@ -56,7 +57,7 @@ export class EncyclopediaController {
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: '어종 새로 등록 (로그인 필요)' })
-  @UseInterceptors(createImageUploadInterceptor('image', 'encyclopedia'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'encyclopedia'), ImageMagicInterceptor)
   async createSpecies(
     @CurrentUser() user: { id: string },
     @UploadedFile() file: Express.Multer.File | undefined,
@@ -92,7 +93,7 @@ export class EncyclopediaController {
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: '어종 정보 수정 (사진·텍스트, 수정 로그 기록)' })
-  @UseInterceptors(createImageUploadInterceptor('image', 'encyclopedia'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'encyclopedia'), ImageMagicInterceptor)
   async createTip(
     @Param('speciesId') speciesId: string,
     @CurrentUser() user: { id: string },

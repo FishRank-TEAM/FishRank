@@ -9,6 +9,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { TournamentsService } from './tournaments.service';
 
 import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload/upload.config';
+import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
 
 
 
@@ -144,7 +145,7 @@ export class TournamentsController {
 
   @ApiConsumes('multipart/form-data')
 
-  @UseInterceptors(createImageUploadInterceptor('banner', 'tournament'))
+  @UseInterceptors(createImageUploadInterceptor('banner', 'tournament'), ImageMagicInterceptor)
 
   async create(
 
@@ -198,7 +199,7 @@ export class TournamentsController {
 
   @ApiConsumes('multipart/form-data')
 
-  @UseInterceptors(createImageUploadInterceptor('banner', 'tournament'))
+  @UseInterceptors(createImageUploadInterceptor('banner', 'tournament'), ImageMagicInterceptor)
 
   async update(
 

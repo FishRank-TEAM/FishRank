@@ -13,6 +13,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 import { determineGrade } from '../common/certification/certification-grade.util';
 import { createImageUploadInterceptor } from '../common/upload/upload.config';
+import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
 import { AiService } from './ai.service';
 import { DevOnlyGuard } from './dev-only.guard';
 import { TestByUrlDto } from './dto/test-by-url.dto';
@@ -49,7 +50,7 @@ export class AiController {
 
   @Post('test')
   @ApiOperation({ summary: '이미지 업로드 후 AI 분석 (DB 저장 없음)' })
-  @UseInterceptors(createImageUploadInterceptor('image', 'ai-test'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'ai-test'), ImageMagicInterceptor)
   async testUpload(@UploadedFile() file: Express.Multer.File) {
     if (!file?.path) {
       throw new BadRequestException('이미지 파일이 필요합니다.');
