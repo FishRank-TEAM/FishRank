@@ -8,10 +8,28 @@ declare namespace kakao.maps {
   class Map {
     constructor(container: HTMLElement, options: Record<string, unknown>);
     getLevel(): number;
+    getCenter(): LatLng;
     setCenter(latlng: LatLng): void;
     setLevel(level: number, options?: { animate?: boolean }): void;
+    setBounds(
+      bounds: LatLngBounds,
+      paddingTop?: number,
+      paddingRight?: number,
+      paddingBottom?: number,
+      paddingLeft?: number,
+    ): void;
     addControl(control: unknown, position: unknown): void;
     relayout(): void;
+  }
+
+  class LatLngBounds {
+    constructor(sw?: LatLng, ne?: LatLng);
+    extend(latlng: LatLng): void;
+  }
+
+  class Circle {
+    constructor(options: Record<string, unknown>);
+    setMap(map: Map | null): void;
   }
 
   class Polygon {
