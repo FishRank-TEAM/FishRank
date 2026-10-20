@@ -31,4 +31,12 @@ export class AuthController {
     const result = await this.authService.refresh(dto.refreshToken);
     return { success: true, data: result };
   }
+
+  @Post('logout')
+  @HttpCode(200)
+  @ApiOperation({ summary: '리프레시 토큰 폐기' })
+  async logout(@Body() dto: RefreshDto) {
+    await this.authService.logout(dto.refreshToken);
+    return { success: true };
+  }
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '@/lib/api';
+import { revokeRefreshToken } from '@/lib/revoke-refresh';
 
 interface User {
   id: string;
@@ -48,9 +49,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
+    const refreshToken = localStorage.getItem('refreshToken');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     set({ user: null, accessToken: null, isLoggedIn: false, authReady: true });
+    if (refreshToken) void revokeRefreshToken(refreshToken);
   },
 
   restoreSession: async () => {

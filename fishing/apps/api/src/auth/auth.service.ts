@@ -9,6 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { hashRefreshToken } from './refresh-token.util';
 
 @Injectable()
 export class AuthService {
@@ -31,7 +32,7 @@ export class AuthService {
       passwordHash,
     });
 
-    const tokens = this.generateTokens(user.id, user.email);
+    const tokens = await this.issueSession(user.id, user.email);
     return { user: this.sanitizeUser(user), ...tokens };
   }
 
@@ -50,7 +51,12 @@ export class AuthService {
       throw new ForbiddenException('정지된 계정입니다. 관리자에게 문의해 주세요.');
     }
 
-    const tokens = this.generateTokens(user.id, user.email);
+    return this.issueSession(user.id, user.email);
+  }
+
+  private async issueSession(userId: string, email: string) {
+    const tokens = this.generateTokens(userId, email);
+    await this.usersService.setRefreshTokenHash(userId, hashRefreshToken(tokens.refreshToken));
     return tokens;
   }
 
@@ -70,7 +76,12 @@ export class AuthService {
       if (user.deletedAt) {
         throw new ForbiddenException('정지된 계정입니다. 관리자에게 문의해 주세요.');
       }
-      return this.generateTokens(user.id, user.email);
+      const incoming = hashRefreshToken(refreshToken);
+      if (user.refreshTokenHash && user.refreshTokenHash !== incoming) {
+        await this.usersService.setRefreshTokenHash(user.id, null);
+        throw new UnauthorizedException('세션이 만료되었습니다. 다시 로그인해주세요.');
+      }
+      return this.issueSession(user.id, user.email);
     } catch (error) {
       if (error instanceof ForbiddenException || error instanceof UnauthorizedException) {
         throw error;
@@ -79,8 +90,22 @@ export class AuthService {
     }
   }
 
+  async logout(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify<{ sub: string; email: string }>(refreshToken);
+      const user = await this.usersService.findByIdIncludingDeleted(payload.sub);
+      if (!user) return;
+      const incoming = hashRefreshToken(refreshToken);
+      if (!user.refreshTokenHash || user.refreshTokenHash === incoming) {
+        await this.usersService.setRefreshTokenHash(user.id, null);
+      }
+    } catch (error) {
+      if (error instanceof ForbiddenException) throw error;
+    }
+  }
+
   sanitizeUser(user: any) {
-    const { passwordHash, ...rest } = user;
+    const { passwordHash, refreshTokenHash, ...rest } = user;
     return rest;
   }
 }
