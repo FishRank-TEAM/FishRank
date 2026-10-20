@@ -3,6 +3,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from app.analyzer import analyze_image, resolve_image_path
 from app.auth import verify_internal_secret
 from app.config import settings
+from app.production_guard import assert_production_secret, runtime_env
 from app.keypoints import detect_keypoints
 from app.schemas import (
     AnalyzeRequest,
@@ -20,6 +21,7 @@ app = FastAPI(title="FishRank AI Server", version="1.0.0")
 
 @app.on_event("startup")
 def _startup_warmup() -> None:
+    assert_production_secret(runtime_env(), settings.internal_secret)
     if is_yolo_available():
         warmup_yolo()
 

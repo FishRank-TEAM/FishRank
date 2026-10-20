@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { API_GLOBAL_PREFIX, GLOBAL_PREFIX_EXCLUDES } from './app-prefix';
+import { assertProductionAiSecret, shouldExposeSwagger } from './production-guard';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,14 +24,19 @@ async function bootstrap() {
     }),
   );
 
-  const config = new DocumentBuilder()
-    .setTitle('FishRank API')
-    .setDescription('낚시 랭킹 서비스 API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  assertProductionAiSecret(process.env.NODE_ENV, process.env.AI_SERVER_SECRET);
+
+  const exposeSwagger = shouldExposeSwagger(process.env.NODE_ENV);
+  if (exposeSwagger) {
+    const config = new DocumentBuilder()
+      .setTitle('FishRank API')
+      .setDescription('낚시 랭킹 서비스 API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = process.env.PORT || 4000;
   const host = process.env.HOST || '0.0.0.0';
@@ -39,6 +45,8 @@ async function bootstrap() {
   if (host === '0.0.0.0') {
     console.log(`📱 LAN(모바일) 접속: http://<PC_IP>:${port}/api/v1`);
   }
-  console.log(`📋 Swagger 문서: http://localhost:${port}/api/docs`);
+  if (exposeSwagger) {
+    console.log(`📋 Swagger 문서: http://localhost:${port}/api/docs`);
+  }
 }
 bootstrap();
