@@ -8,6 +8,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 import { TournamentsService } from './tournaments.service';
 import { SetDayCodeDto } from './dto/set-day-code.dto';
+import { OrganizerTournamentDto } from './dto/organizer-tournament.dto';
 
 import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload/upload.config';
 import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
@@ -71,6 +72,33 @@ export class TournamentsController {
   }
 
 
+
+  @Get('organized')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '내가 운영하는 대회' })
+  async listOrganized(@CurrentUser() user: any) {
+    const result = await this.tournamentsService.listOrganized(user.id);
+    return { success: true, data: result };
+  }
+
+  @Post('organized')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '낚시점·포인트 운영자가 무료 대회 생성' })
+  async createOrganized(@CurrentUser() user: any, @Body() body: OrganizerTournamentDto) {
+    const result = await this.tournamentsService.createForOrganizer(user.id, body);
+    return { success: true, data: result };
+  }
+
+  @Patch('organized/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '운영 대회 수정. 참가비는 항상 무료' })
+  async updateOrganized(@Param('id') id: string, @CurrentUser() user: any, @Body() body: OrganizerTournamentDto) {
+    const result = await this.tournamentsService.updateForOrganizer(user.id, id, body);
+    return { success: true, data: result };
+  }
 
   @Get(':id')
 

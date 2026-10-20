@@ -49,6 +49,7 @@ export default function Navbar() {
   }, [drawerOpen]);
 
   const showAdmin = user?.role === 'admin' || me?.role === 'admin';
+  const showOrganize = showAdmin || user?.role === 'organizer' || me?.role === 'organizer';
   const profileImage = me?.profileImage ?? user?.profileImage;
 
   const handleLogout = () => {
@@ -90,6 +91,9 @@ export default function Navbar() {
             <div className="site-nav-actions-desktop site-nav-desktop-only">
               {isLoggedIn ? (
                 <>
+                  {showOrganize && (
+                    <Link href="/tournament/organize" className="site-nav-btn-ghost">대회 운영</Link>
+                  )}
                   {showAdmin && (
                     <Link href="/admin" className="site-nav-btn-ghost">관리자</Link>
                   )}
@@ -184,6 +188,11 @@ export default function Navbar() {
               <Link href="/upload/personal" className="site-nav-drawer-link" onClick={() => setDrawerOpen(false)}>
                 자랑 기록 올리기
               </Link>
+              {showOrganize && (
+                <Link href="/tournament/organize" className={drawerLinkClass('/tournament/organize')} onClick={() => setDrawerOpen(false)}>
+                  대회 운영
+                </Link>
+              )}
               {showAdmin && (
                 <Link href="/admin" className={drawerLinkClass('/admin')} onClick={() => setDrawerOpen(false)}>
                   관리자

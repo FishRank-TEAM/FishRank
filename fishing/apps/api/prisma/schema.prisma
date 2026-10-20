@@ -19,7 +19,7 @@ model User {
   activityRegion String? @map("activity_region")   // 주 활동 지역
   fishingCategory String? @map("fishing_category") // freshwater | saltwater | both
   featuredCatchIds String[] @default([]) @map("featured_catch_ids")
-  role         String    @default("user")    // user | admin
+  role         String    @default("user")    // user | admin | organizer
   refreshTokenHash String? @map("refresh_token_hash")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -30,6 +30,7 @@ model User {
   posts            Post[]
   comments         Comment[]
   tournamentEntries TournamentEntry[]
+  organizedTournaments Tournament[] @relation("OrganizedTournaments")
   catchVotes       CatchVote[]
   contentReports   ContentReport[]
   userFeedbacks    UserFeedback[]
@@ -332,13 +333,20 @@ model Tournament {
   status        String    @default("upcoming")              // upcoming | active | closed | finished
   bannerUrl     String?   @map("banner_url")
   rules         String?
+  organizerId   String?   @map("organizer_id")
+  region        String?   @db.VarChar(80)
+  minLengthCm   Decimal?  @map("min_length_cm") @db.Decimal(5, 1)
+  maxLengthCm   Decimal?  @map("max_length_cm") @db.Decimal(5, 1)
+  sponsorName   String?   @map("sponsor_name") @db.VarChar(80)
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   entries       TournamentEntry[]
   dayCodes      TournamentDayCode[]
   dayCodeClaims Catch[]
+  organizer     User?               @relation("OrganizedTournaments", fields: [organizerId], references: [id], onDelete: SetNull)
 
+  @@index([organizerId])
   @@map("tournaments")
 }
 
