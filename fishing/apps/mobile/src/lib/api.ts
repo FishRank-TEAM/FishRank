@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { UPLOAD_CHANNEL_APP } from '@fishrank/shared';
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from './storage';
 import { resolveApiBaseUrl } from './api-url';
 
@@ -96,10 +95,12 @@ export async function uploadCertifiedCatch(
   if (locationName) form.append('locationName', locationName);
   if (memo) form.append('memo', memo);
 
+  const session = await api.post('/catches/capture-sessions');
+  form.append('captureToken', session.data.data.captureToken);
+
   return api.post('/catches', form, {
     headers: {
       'Content-Type': 'multipart/form-data',
-      'X-Upload-Channel': UPLOAD_CHANNEL_APP,
     },
   });
 }
