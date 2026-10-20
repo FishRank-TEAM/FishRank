@@ -1,4 +1,4 @@
-import { ConflictException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ServiceUnavailableException } from '@nestjs/common';
 import { CatchesService } from './catches.service';
 import { removeUploadedFile } from '../common/upload/image-integrity.util';
 import { computePerceptualHash } from '../common/upload/image-phash.util';
@@ -32,7 +32,14 @@ describe('CatchesService 이미지 해시', () => {
     },
   };
   const aiService = { analyze: jest.fn() };
-  const service = new CatchesService(prisma as never, aiService as never);
+  const tournaments = {
+    resolveDayCodeClaim: jest.fn().mockResolvedValue({
+      claimedTournamentId: null,
+      claimedDayCode: null,
+      dayCodeStatus: null,
+    }),
+  };
+  const service = new CatchesService(prisma as never, aiService as never, tournaments as never);
   const file = { path: '/tmp/fish.jpg', filename: 'catch-1.jpg' } as Express.Multer.File;
 
   beforeEach(() => {
@@ -112,6 +119,17 @@ describe('CatchesService 이미지 해시', () => {
         data: expect.objectContaining({ perceptualHash: 'aaaaaaaaaaaaaaaa' }),
       }),
     );
+  });
+
+  it('대회 코드가 맞지 않으면 파일을 지우고 기록을 만들지 않는다', async () => {
+    prisma.catch.findFirst.mockResolvedValue(null);
+    tournaments.resolveDayCodeClaim.mockRejectedValueOnce(new BadRequestException('대회 코드가 맞지 않습니다.'));
+
+    await expect(
+      service.createCertified('user-1', file, { tournamentId: 'tour-1', dayCode: 'NOPE' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(removeUploadedFile).toHaveBeenCalledWith(file.path);
+    expect(prisma.catch.create).not.toHaveBeenCalled();
   });
 
   it('자랑 기록을 지우면 이미지 해시를 비운다', async () => {

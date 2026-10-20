@@ -20,6 +20,7 @@ export default function AdminTournamentsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [dayCodes, setDayCodes] = useState<Record<string, string>>({});
 
   const { data: tournaments } = useQuery({
     queryKey: ['admin-tournaments'],
@@ -40,6 +41,10 @@ export default function AdminTournamentsPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-tournaments'] });
       resetForm();
     },
+  });
+
+  const dayCodeMutation = useMutation({
+    mutationFn: ({ id, code }: { id: string; code: string }) => api.post(`/tournaments/${id}/day-code`, { code }),
   });
 
   const statusMutation = useMutation({
@@ -130,6 +135,20 @@ export default function AdminTournamentsPage() {
                   >
                     {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                   </select>
+                  <input
+                    className="admin-input"
+                    value={dayCodes[t.id] ?? ''}
+                    placeholder="오늘 코드"
+                    maxLength={12}
+                    onChange={(e) => setDayCodes((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                  />
+                  <button
+                    type="button"
+                    className="admin-btn-ghost"
+                    onClick={() => dayCodeMutation.mutate({ id: t.id, code: dayCodes[t.id] ?? '' })}
+                  >
+                    오늘 코드
+                  </button>
                   <button type="button" className="admin-btn-ghost" onClick={() => startEdit(t)}>수정</button>
                   <button
                     type="button"

@@ -37,6 +37,12 @@ function AdminCatchesContent() {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
+  const dayCodeMutation = useMutation({
+    mutationFn: ({ id, status: dayCodeStatus }: { id: string; status: 'accepted' | 'rejected' }) =>
+      api.patch(`/admin/catches/${id}/day-code`, { status: dayCodeStatus }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-catches'] }),
+  });
+
   useEffect(() => {
     const s = searchParams.get('status');
     if (s) setStatus(s);
@@ -100,6 +106,17 @@ function AdminCatchesContent() {
                   {c.lengthCm ? ` · ${formatLength(c.lengthCm)}` : ''}
                 </p>
                 <p className="admin-muted">{c.locationName ? `📍 ${c.locationName}` : formatTimeAgo(c.createdAt)}</p>
+                {c.claimedDayCode && (
+                  <div className="admin-row-actions">
+                    <span className="admin-badge">코드 {c.claimedDayCode} · {c.dayCodeStatus}</span>
+                    <button type="button" className="admin-btn-primary" onClick={() => dayCodeMutation.mutate({ id: c.id, status: 'accepted' })}>
+                      코드 확인
+                    </button>
+                    <button type="button" className="admin-btn-ghost" onClick={() => dayCodeMutation.mutate({ id: c.id, status: 'rejected' })}>
+                      코드 거절
+                    </button>
+                  </div>
+                )}
                 {c.certification?.errorMessage && (
                   <p className="admin-note">{c.certification.errorMessage}</p>
                 )}

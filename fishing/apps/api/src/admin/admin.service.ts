@@ -186,6 +186,20 @@ export class AdminService {
     return { action, targetType, targetId };
   }
 
+  async reviewDayCode(catchId: string, status: 'accepted' | 'rejected') {
+    const catch_ = await this.prisma.catch.findUnique({
+      where: { id: catchId, deletedAt: null },
+    });
+    if (!catch_) throw new NotFoundException('기록을 찾을 수 없습니다.');
+    if (!catch_.claimedDayCode) throw new BadRequestException('제출된 대회 코드가 없습니다.');
+
+    await this.prisma.catch.update({
+      where: { id: catchId },
+      data: { dayCodeStatus: status },
+    });
+    return { catchId, dayCodeStatus: status };
+  }
+
   async listCatches(status?: string, page = 1, limit = 20) {
     const take = Math.min(50, Math.max(1, limit));
     const skip = (Math.max(1, page) - 1) * take;

@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 import { TournamentsService } from './tournaments.service';
+import { SetDayCodeDto } from './dto/set-day-code.dto';
 
 import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload/upload.config';
 import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
@@ -223,6 +224,22 @@ export class TournamentsController {
 
     return { success: true, data: result };
 
+  }
+
+  @Get(':id/day-code')
+  @ApiOperation({ summary: '오늘(서울) 대회 코드 조회' })
+  async getDayCode(@Param('id') id: string) {
+    const result = await this.tournamentsService.getTodayDayCode(id);
+    return { success: true, data: result };
+  }
+
+  @Post(':id/day-code')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '[어드민] 오늘(서울) 대회 코드 등록' })
+  async setDayCode(@Param('id') id: string, @CurrentUser() user: any, @Body() body: SetDayCodeDto) {
+    const result = await this.tournamentsService.setTodayDayCode(user.id, id, body.code);
+    return { success: true, data: result };
   }
 
   @Delete(':id')

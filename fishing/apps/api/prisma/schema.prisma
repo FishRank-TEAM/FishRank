@@ -165,7 +165,10 @@ model Catch {
   photoTakenAt  DateTime? @map("photo_taken_at")
   exifLat       Decimal?  @map("exif_lat") @db.Decimal(9, 6)
   exifLng       Decimal?  @map("exif_lng") @db.Decimal(9, 6)
-  integrityNote String?   @map("integrity_note") @db.VarChar(80)
+  integrityNote       String?   @map("integrity_note") @db.VarChar(80)
+  claimedTournamentId String?   @map("claimed_tournament_id")
+  claimedDayCode      String?   @map("claimed_day_code") @db.VarChar(12)
+  dayCodeStatus       String?   @map("day_code_status") @db.VarChar(20)
   recordType    String    @default("certified") @map("record_type") // certified | personal
   status        String    @default("pending")
   memo          String?
@@ -175,8 +178,9 @@ model Catch {
 
   user          User            @relation(fields: [userId], references: [id])
   fishSpecies   FishSpecies?    @relation(fields: [fishSpeciesId], references: [id])
-  certification Certification?
-  rankings      Ranking[]
+  certification     Certification?
+  claimedTournament Tournament?     @relation(fields: [claimedTournamentId], references: [id], onDelete: SetNull)
+  rankings          Ranking[]
   votes         CatchVote[]
   posts         Post[]
 
@@ -329,7 +333,9 @@ model Tournament {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  entries TournamentEntry[]
+  entries       TournamentEntry[]
+  dayCodes      TournamentDayCode[]
+  dayCodeClaims Catch[]
 
   @@map("tournaments")
 }
@@ -351,6 +357,19 @@ model TournamentEntry {
 
   @@unique([tournamentId, userId])
   @@map("tournament_entries")
+}
+
+model TournamentDayCode {
+  id           String   @id @default(uuid())
+  tournamentId String   @map("tournament_id")
+  codeDate     String   @map("code_date") @db.VarChar(10)
+  code         String   @db.VarChar(12)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, codeDate])
+  @@map("tournament_day_codes")
 }
 
 model Announcement {
