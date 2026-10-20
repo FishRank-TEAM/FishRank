@@ -1,5 +1,7 @@
 # 소셜 로그인 설정 가이드
 
+카카오·구글 로그인은 아직 API에 연결되어 있지 않습니다. 아래는 나중에 붙일 때 쓰는 메모입니다.
+
 ## 카카오 로그인
 
 ### 1. 카카오 개발자 앱 등록
@@ -38,9 +40,9 @@ GOOGLE_CALLBACK_URL=http://localhost:4000/api/v1/auth/google/callback
 
 ### 3. 패키지 설치
 ```bash
-cd apps/api
-pnpm add passport-kakao passport-google-oauth20
-pnpm add -D @types/passport-google-oauth20
+# fishing/ 에서
+npm install passport-kakao passport-google-oauth20 --prefix apps/api
+npm install -D @types/passport-google-oauth20 --prefix apps/api
 ```
 
 ---

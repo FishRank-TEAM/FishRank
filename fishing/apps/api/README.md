@@ -1,6 +1,6 @@
 # FishRank API
 
-NestJS + Prisma 백엔드.
+NestJS, Prisma, PostgreSQL 백엔드입니다. JWT 인증, 기록, 랭킹, 업로드, AI 호출을 담당합니다. 저장소 소개는 [README](../../../README.md)입니다.
 
 ## 로컬 실행
 

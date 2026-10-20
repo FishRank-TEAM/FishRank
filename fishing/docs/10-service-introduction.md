@@ -64,6 +64,18 @@ FishRank에서 **대회 목록 조회 → 상세 확인 → 참가 → 순위 �
 
 ---
 
+## 화면
+
+로컬 시드로 찍은 웹 화면입니다. 전체 목록은 [화면 자료](../../docs/assets/README.md)에 있습니다.
+
+![홈](../../docs/assets/home.jpg)
+
+![주간 랭킹](../../docs/assets/ranking.jpg)
+
+![자랑 기록 작성](../../docs/assets/upload.jpg)
+
+공식 인증 촬영은 웹 폼이 아닙니다. `/upload`는 앱에서 찍으라는 안내입니다.
+
 ## 서비스 메뉴 구성
 
 ```
