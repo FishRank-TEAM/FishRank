@@ -374,7 +374,8 @@ export default function ConditionsMapHub({
 
         const wrap = document.createElement('div');
         wrap.innerHTML = banLabelHtml(zone);
-        wrap.title = `${zone.reason}${zone.address ? ` · ${zone.address}` : ''}`;
+        const address = 'address' in zone ? zone.address : undefined;
+        wrap.title = `${zone.reason}${address ? ` · ${address}` : ''}`;
         const overlay = new kakaoMaps.CustomOverlay({
           position: pos,
           content: wrap,
