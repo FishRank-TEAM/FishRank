@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import api from '@/lib/api';
@@ -8,10 +9,11 @@ import { formatLength, formatTimeAgo } from '@/lib/utils';
 
 export default function AdminReportsPage() {
   const queryClient = useQueryClient();
+  const [note, setNote] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-flagged-reports'],
-    queryFn: async () => (await api.get('/admin/reports/flagged?minCount=3')).data.data,
+    queryFn: async () => (await api.get('/admin/reports/flagged?minCount=1')).data.data,
   });
 
   const resolveMutation = useMutation({
@@ -19,11 +21,13 @@ export default function AdminReportsPage() {
       targetType,
       targetId,
       action,
+      adminNote,
     }: {
       targetType: 'catch' | 'post';
       targetId: string;
       action: 'dismiss' | 'delete';
-    }) => api.patch(`/admin/reports/${targetType}/${targetId}`, { action }),
+      adminNote?: string;
+    }) => api.patch(`/admin/reports/${targetType}/${targetId}`, { action, adminNote }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-flagged-reports'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
@@ -34,7 +38,7 @@ export default function AdminReportsPage() {
     <div className="admin-page">
       <header className="admin-page-head">
         <h1>신고 관리</h1>
-        <p>신고가 3건 이상 접수된 콘텐츠를 신고 수가 많은 순으로 표시합니다.</p>
+        <p>신고 1건부터 검토합니다. 처리 메모는 기록에 남고, 랭킹은 콘텐츠를 삭제할 때만 빠집니다.</p>
       </header>
 
       {isLoading ? (
@@ -104,6 +108,13 @@ export default function AdminReportsPage() {
                 ))}
               </ul>
 
+              <textarea
+                className="admin-input"
+                rows={2}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="처리 메모 (선택)"
+              />
               <div className="admin-row-actions">
                 <button
                   type="button"
@@ -115,6 +126,7 @@ export default function AdminReportsPage() {
                       targetType: item.targetType,
                       targetId: item.targetId,
                       action: 'delete',
+                      adminNote: note,
                     });
                   }}
                 >
@@ -130,6 +142,7 @@ export default function AdminReportsPage() {
                       targetType: item.targetType,
                       targetId: item.targetId,
                       action: 'dismiss',
+                      adminNote: note,
                     });
                   }}
                 >

@@ -9,7 +9,7 @@ import { colors } from '@/theme/colors';
 export default function AdminReportsScreen() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'reports'],
-    queryFn: async () => (await api.get('/admin/reports/flagged')).data.data.items,
+    queryFn: async () => (await api.get('/admin/reports/flagged?minCount=1')).data.data,
   });
 
   return (
@@ -21,7 +21,7 @@ export default function AdminReportsScreen() {
         ) : (
           <FlatList
             data={data ?? []}
-            keyExtractor={(item: { id: string }) => item.id}
+            keyExtractor={(item: { targetType: string; targetId: string }) => `${item.targetType}-${item.targetId}`}
             ListEmptyComponent={<EmptyState title="신고가 없습니다" />}
             renderItem={({ item }: { item: { targetType: string; reportCount: number } }) => (
               <Text style={styles.row}>
