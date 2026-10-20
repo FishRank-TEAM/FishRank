@@ -35,3 +35,6 @@ jobs:
 
       - name: AI path unit tests
         run: python3 -m unittest discover -s ai/tests -t ai
+
+      - name: Python launcher tests
+        run: node --test scripts/python-bin.test.mjs

@@ -280,10 +280,12 @@ npm run dev
 
 - 정상 동작입니다. 줄자 + 물고기가 함께 보이는 사진이어야 S/A 등급이 부여됩니다.
 
-### `py -3.12` 명령을 찾을 수 없음
+### Python 실행 파일을 찾을 수 없음
 
-- Python 3.12 설치 후 `py -3.12 --version` 확인
-- 또는 `ai/run.py`를 직접 실행: `python ai/run.py` (Python 3.12 경로 사용)
+`npm run ai`는 `scripts/py.mjs`가 `py -3.12`, `python3`, `python` 순서로 Python 3.12 이상을 찾습니다.
+
+- Windows: Python 3.12 설치 후 `py -3.12 --version` 확인
+- Linux/macOS: `python3 --version`이 3.12 이상인지 확인
 
 ### 포트 8000 이미 사용 중
 
