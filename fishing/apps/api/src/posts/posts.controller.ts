@@ -12,6 +12,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PostsService } from './posts.service';
 
 import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload/upload.config';
+import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { parseTagsInput } from './post-tags.util';
 
@@ -37,7 +38,7 @@ export class PostsController {
 
   @ApiConsumes('multipart/form-data')
 
-  @UseInterceptors(createImageUploadInterceptor('image', 'post'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'post'), ImageMagicInterceptor)
 
   async create(
 
@@ -139,7 +140,7 @@ export class PostsController {
 
   @ApiConsumes('multipart/form-data')
 
-  @UseInterceptors(createImageUploadInterceptor('image', 'post'))
+  @UseInterceptors(createImageUploadInterceptor('image', 'post'), ImageMagicInterceptor)
 
   async update(
 
