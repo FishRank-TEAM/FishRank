@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeDayCode, seoulDateKey } from './day-code.util';
+import { buildLiveLeaderboard, leaderboardCsv } from './live-leaderboard.util';
 
 export type DayCodeClaim = {
   claimedTournamentId: string | null;
@@ -82,15 +83,39 @@ export class TournamentsService {
 
   async getRanking(tournamentId: string) {
     const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
-    if (!tournament) throw new NotFoundException();
+    if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
 
     const entries = await this.prisma.tournamentEntry.findMany({
-      where: { tournamentId, paymentStatus: { in: ['free', 'paid'] } },
+      where: { tournamentId },
       include: { user: { select: { id: true, nickname: true, profileImage: true } } },
-      orderBy: { bestLengthCm: 'desc' },
+    });
+    if (!entries.length) return [];
+
+    const catches = await this.prisma.catch.findMany({
+      where: {
+        deletedAt: null,
+        status: 'approved',
+        recordType: 'certified',
+        userId: { in: entries.map((entry) => entry.userId) },
+        createdAt: { gte: tournament.startAt, lte: tournament.endAt },
+      },
+      select: { id: true, userId: true, lengthCm: true, createdAt: true, fishSpeciesId: true },
     });
 
-    return entries.map((e, i) => ({ ...e, rank: i + 1 }));
+    return buildLiveLeaderboard(
+      {
+        fishSpeciesId: tournament.fishSpeciesId,
+        minLengthCm: tournament.minLengthCm == null ? null : Number(tournament.minLengthCm),
+        maxLengthCm: tournament.maxLengthCm == null ? null : Number(tournament.maxLengthCm),
+        startAt: tournament.startAt,
+        endAt: tournament.endAt,
+      },
+      entries,
+      catches.map((catch_) => ({
+        ...catch_,
+        lengthCm: Number(catch_.lengthCm),
+      })),
+    );
   }
 
   // 어드민: 대회 생성
@@ -188,6 +213,42 @@ export class TournamentsService {
     if (stored.code !== code) throw new BadRequestException('대회 코드가 맞지 않습니다.');
 
     return { claimedTournamentId: tournamentId, claimedDayCode: code, dayCodeStatus: 'pending' };
+  }
+
+  async listParticipants(actorId: string, tournamentId: string) {
+    await this.assertManagesTournament(actorId, tournamentId);
+    return this.prisma.tournamentEntry.findMany({
+      where: { tournamentId },
+      include: { user: { select: { id: true, nickname: true, profileImage: true } } },
+      orderBy: { joinedAt: 'asc' },
+    });
+  }
+
+  async setDisqualified(actorId: string, tournamentId: string, userId: string, disqualified: boolean, note?: string) {
+    await this.assertManagesTournament(actorId, tournamentId);
+    const entry = await this.prisma.tournamentEntry.findUnique({
+      where: { tournamentId_userId: { tournamentId, userId } },
+    });
+    if (!entry) throw new NotFoundException('참가자를 찾을 수 없습니다.');
+    return this.prisma.tournamentEntry.update({
+      where: { id: entry.id },
+      data: { disqualified, disqualifyNote: note?.trim() || null },
+    });
+  }
+
+  async exportLeaderboard(actorId: string, tournamentId: string) {
+    await this.assertManagesTournament(actorId, tournamentId);
+    return leaderboardCsv(await this.getRanking(tournamentId));
+  }
+
+  private async assertManagesTournament(actorId: string, tournamentId: string) {
+    const actor = await this.prisma.user.findUnique({ where: { id: actorId } });
+    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
+    const isAdmin = actor?.role === 'admin';
+    const isOwner = actor?.role === 'organizer' && tournament.organizerId === actorId;
+    if (!isAdmin && !isOwner) throw new ForbiddenException('이 대회를 운영할 수 없습니다.');
+    return tournament;
   }
 
   async listOrganized(userId: string) {
