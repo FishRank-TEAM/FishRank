@@ -38,7 +38,7 @@ import { CatchesService } from './catches.service';
 
 import { createImageUploadInterceptor } from '../common/upload/upload.config';
 import { ImageMagicInterceptor } from '../common/upload/image-magic.interceptor';
-import { assertAppUploadChannel } from '../common/upload/upload-channel.util';
+import { CaptureSessionService } from './capture-session.service';
 import { UpdatePersonalCatchDto } from './dto/update-personal-catch.dto';
 
 
@@ -49,9 +49,22 @@ import { UpdatePersonalCatchDto } from './dto/update-personal-catch.dto';
 
 export class CatchesController {
 
-  constructor(private catchesService: CatchesService) {}
+  constructor(
+    private catchesService: CatchesService,
+    private captureSessions: CaptureSessionService,
+  ) {}
 
 
+
+  @Post('capture-sessions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(201)
+  @ApiOperation({ summary: '공식 인증 촬영용 일회성 토큰 발급 (10분)' })
+  async issueCaptureSession(@CurrentUser() user: { id: string }) {
+    const data = await this.captureSessions.issue(user.id);
+    return { success: true, data };
+  }
 
   @Post()
 
@@ -75,11 +88,11 @@ export class CatchesController {
 
     @Body() body: any,
 
-    @Headers('x-upload-channel') uploadChannel?: string,
+    @Headers('x-capture-token') captureHeader?: string,
 
   ) {
 
-    assertAppUploadChannel(uploadChannel);
+    await this.captureSessions.consume(user.id, body?.captureToken || captureHeader);
 
     const result = await this.catchesService.createCertified(user.id, file, body);
 
