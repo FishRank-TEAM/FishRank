@@ -1,6 +1,7 @@
+import axios from 'axios';
 import { create } from 'zustand';
-import { api } from '@/lib/api';
-import { clearTokens, getAccessToken, setTokens } from '@/lib/storage';
+import { api, baseURL } from '@/lib/api';
+import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '@/lib/storage';
 
 type User = {
   id: string;
@@ -31,6 +32,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    const refreshToken = await getRefreshToken();
+    if (refreshToken) {
+      await axios
+        .post(`${baseURL}/auth/logout`, { refreshToken }, { timeout: 5000 })
+        .catch(() => undefined);
+    }
     await clearTokens();
     set({ isLoggedIn: false, user: null });
   },

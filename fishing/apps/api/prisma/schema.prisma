@@ -20,6 +20,7 @@ model User {
   fishingCategory String? @map("fishing_category") // freshwater | saltwater | both
   featuredCatchIds String[] @default([]) @map("featured_catch_ids")
   role         String    @default("user")    // user | admin
+  refreshTokenHash String? @map("refresh_token_hash")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")

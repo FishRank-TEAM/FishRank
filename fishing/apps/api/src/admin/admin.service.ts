@@ -530,7 +530,10 @@ export class AdminService {
 
     const data: Record<string, unknown> = {};
     if (dto.role) data.role = dto.role;
-    if (dto.accountStatus === 'suspended') data.deletedAt = new Date();
+    if (dto.accountStatus === 'suspended') {
+      data.deletedAt = new Date();
+      data.refreshTokenHash = null;
+    }
     if (dto.accountStatus === 'active') data.deletedAt = null;
 
     return this.prisma.user.update({
