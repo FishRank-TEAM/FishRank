@@ -125,6 +125,15 @@ export class TournamentsController {
     return { success: true, data: result };
   }
 
+  @Get('organized/:id/day-code')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '운영 중인 대회의 오늘 코드 확인' })
+  async getManagedDayCode(@Param('id') id: string, @CurrentUser() user: any) {
+    const result = await this.tournamentsService.getManagedDayCode(user.id, id);
+    return { success: true, data: result };
+  }
+
   @Get('organized/:id/export')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -291,7 +300,7 @@ export class TournamentsController {
   }
 
   @Get(':id/day-code')
-  @ApiOperation({ summary: '오늘(서울) 대회 코드 조회' })
+  @ApiOperation({ summary: '오늘(서울) 대회 코드 등록 여부. 코드 값은 반환하지 않음' })
   async getDayCode(@Param('id') id: string) {
     const result = await this.tournamentsService.getTodayDayCode(id);
     return { success: true, data: result };

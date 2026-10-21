@@ -159,6 +159,16 @@ export class TournamentsService {
   }
 
   async getTodayDayCode(tournamentId: string, now = new Date()) {
+    const row = await this.findTodayDayCode(tournamentId, now);
+    return { codeDate: row.codeDate, hasCode: row.code !== null };
+  }
+
+  async getManagedDayCode(actorId: string, tournamentId: string, now = new Date()) {
+    await this.assertManagesTournament(actorId, tournamentId);
+    return this.findTodayDayCode(tournamentId, now);
+  }
+
+  private async findTodayDayCode(tournamentId: string, now: Date) {
     const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
     const codeDate = seoulDateKey(now);
