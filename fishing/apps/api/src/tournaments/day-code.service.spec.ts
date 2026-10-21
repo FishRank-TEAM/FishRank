@@ -59,6 +59,45 @@ describe('TournamentsService 일일 코드', () => {
     expect(prisma.tournamentEntry.findUnique).not.toHaveBeenCalled();
   });
 
+  it('공개 조회는 코드가 있는지만 알려 준다', async () => {
+    prisma.tournamentDayCode.findUnique.mockResolvedValue({ code: 'LAKE1' });
+
+    const result = await service.getTodayDayCode('tour-1', now);
+
+    expect(result).toEqual({ codeDate: '2026-10-20', hasCode: true });
+    expect(JSON.stringify(result)).not.toContain('LAKE1');
+  });
+
+  it('코드가 없으면 공개 조회도 값 없이 없다고 한다', async () => {
+    prisma.tournamentDayCode.findUnique.mockResolvedValue(null);
+
+    await expect(service.getTodayDayCode('tour-1', now)).resolves.toEqual({
+      codeDate: '2026-10-20',
+      hasCode: false,
+    });
+  });
+
+  it('대회 운영자는 오늘 코드를 확인한다', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'org-1', role: 'organizer' });
+    prisma.tournament.findUnique.mockResolvedValue({ id: 'tour-1', organizerId: 'org-1' });
+    prisma.tournamentDayCode.findUnique.mockResolvedValue({ code: 'LAKE1' });
+
+    await expect(service.getManagedDayCode('org-1', 'tour-1', now)).resolves.toEqual({
+      codeDate: '2026-10-20',
+      code: 'LAKE1',
+    });
+  });
+
+  it('참가자는 오늘 코드를 조회하지 못한다', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'user-1', role: 'user' });
+    prisma.tournament.findUnique.mockResolvedValue({ id: 'tour-1', organizerId: 'org-1' });
+
+    await expect(service.getManagedDayCode('user-1', 'tour-1', now)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(prisma.tournamentDayCode.findUnique).not.toHaveBeenCalled();
+  });
+
   it('다른 코드는 거절한다', async () => {
     prisma.tournamentEntry.findUnique.mockResolvedValue({ paymentStatus: 'paid' });
     prisma.tournamentDayCode.findUnique.mockResolvedValue({ code: 'LAKE1' });
