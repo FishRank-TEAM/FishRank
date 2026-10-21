@@ -249,6 +249,65 @@ export class TournamentsService {
     });
   }
 
+  async updateOrganizerStatus(actorId: string, tournamentId: string, status: string) {
+    await this.assertManagesTournament(actorId, tournamentId);
+    if (!['upcoming', 'active', 'closed', 'finished'].includes(status)) {
+      throw new BadRequestException('대회 상태가 올바르지 않습니다.');
+    }
+    return this.prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { status },
+      select: { id: true, status: true },
+    });
+  }
+
+  async listDayCodeClaims(actorId: string, tournamentId: string) {
+    await this.assertManagesTournament(actorId, tournamentId);
+    return this.prisma.catch.findMany({
+      where: {
+        deletedAt: null,
+        claimedTournamentId: tournamentId,
+        claimedDayCode: { not: null },
+      },
+      select: {
+        id: true,
+        lengthCm: true,
+        status: true,
+        imageUrl: true,
+        claimedDayCode: true,
+        dayCodeStatus: true,
+        integrityNote: true,
+        createdAt: true,
+        user: { select: { id: true, nickname: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+  }
+
+  async reviewDayCodeClaim(
+    actorId: string,
+    tournamentId: string,
+    catchId: string,
+    status: 'accepted' | 'rejected',
+  ) {
+    await this.assertManagesTournament(actorId, tournamentId);
+    const catch_ = await this.prisma.catch.findFirst({
+      where: {
+        id: catchId,
+        deletedAt: null,
+        claimedTournamentId: tournamentId,
+        claimedDayCode: { not: null },
+      },
+    });
+    if (!catch_) throw new NotFoundException('이 대회에 제출된 코드를 찾을 수 없습니다.');
+    return this.prisma.catch.update({
+      where: { id: catchId },
+      data: { dayCodeStatus: status },
+      select: { id: true, dayCodeStatus: true },
+    });
+  }
+
   async setDisqualified(actorId: string, tournamentId: string, userId: string, disqualified: boolean, note?: string) {
     await this.assertManagesTournament(actorId, tournamentId);
     const entry = await this.prisma.tournamentEntry.findUnique({

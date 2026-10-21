@@ -10,6 +10,8 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { TournamentsService } from './tournaments.service';
 import { SetDayCodeDto } from './dto/set-day-code.dto';
 import { OrganizerTournamentDto } from './dto/organizer-tournament.dto';
+import { OrganizerStatusDto } from './dto/organizer-status.dto';
+import { ReviewDayCodeClaimDto } from './dto/review-day-code-claim.dto';
 import { SetParticipantDto } from './dto/set-participant.dto';
 
 import { createImageUploadInterceptor, saveUploadedFile } from '../common/upload/upload.config';
@@ -90,6 +92,38 @@ export class TournamentsController {
   @ApiOperation({ summary: '낚시점·포인트 운영자가 무료 대회 생성' })
   async createOrganized(@CurrentUser() user: any, @Body() body: OrganizerTournamentDto) {
     const result = await this.tournamentsService.createForOrganizer(user.id, body);
+    return { success: true, data: result };
+  }
+
+  @Patch('organized/:id/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '운영 대회 상태 변경. 참가 개방은 active' })
+  async updateOrganizedStatus(@Param('id') id: string, @CurrentUser() user: any, @Body() body: OrganizerStatusDto) {
+    const result = await this.tournamentsService.updateOrganizerStatus(user.id, id, body.status);
+    return { success: true, data: result };
+  }
+
+  @Get('organized/:id/day-code-claims')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '이 대회에 제출된 일일 코드' })
+  async listDayCodeClaims(@Param('id') id: string, @CurrentUser() user: any) {
+    const result = await this.tournamentsService.listDayCodeClaims(user.id, id);
+    return { success: true, data: result };
+  }
+
+  @Patch('organized/:id/day-code-claims/:catchId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '제출된 일일 코드를 수락하거나 거절' })
+  async reviewDayCodeClaim(
+    @Param('id') id: string,
+    @Param('catchId') catchId: string,
+    @CurrentUser() user: any,
+    @Body() body: ReviewDayCodeClaimDto,
+  ) {
+    const result = await this.tournamentsService.reviewDayCodeClaim(user.id, id, catchId, body.status);
     return { success: true, data: result };
   }
 
