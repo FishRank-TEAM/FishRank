@@ -79,7 +79,7 @@ export default function AdminTournamentsPage() {
 
   const buildFormData = () => {
     const fd = new FormData();
-    Object.entries(form).forEach(([key, value]) => fd.append(key, String(value)));
+    Object.entries({ ...form, isFree: true, entryFee: 0 }).forEach(([key, value]) => fd.append(key, String(value)));
     if (bannerFile) fd.append('banner', bannerFile);
     return fd;
   };
@@ -123,7 +123,7 @@ export default function AdminTournamentsPage() {
                   <strong>{t.title}</strong>
                   <p className="admin-muted">
                     {t.category === 'saltwater' ? '바다' : t.category === 'all' ? '전체' : '민물'}
-                    {' · '}{t.isFree ? '무료' : `${t.entryFee.toLocaleString()}원`}
+                    {' · '}{t.isFree ? '무료' : '유료 참가 불가'}
                     {' · '}참가 {t._count?.entries ?? 0}명
                   </p>
                 </div>
@@ -192,27 +192,13 @@ export default function AdminTournamentsPage() {
                 </select>
               </label>
               <label className="admin-field">
-                <span>참가 유형</span>
-                <select value={form.isFree.toString()} onChange={(e) => setForm((p) => ({ ...p, isFree: e.target.value === 'true' }))} className="admin-input">
-                  <option value="true">무료</option>
-                  <option value="false">유료</option>
-                </select>
+                <span>후원 상 금액 (원, 안내)</span>
+                <input name="prizeAmount" type="number" value={form.prizeAmount} onChange={handleChange} className="admin-input" />
               </label>
             </div>
-            {!form.isFree && (
-              <div className="admin-form-row">
-                <label className="admin-field">
-                  <span>참가비 (원)</span>
-                  <input name="entryFee" type="number" value={form.entryFee} onChange={handleChange} className="admin-input" />
-                </label>
-                <label className="admin-field">
-                  <span>총 상금 (원)</span>
-                  <input name="prizeAmount" type="number" value={form.prizeAmount} onChange={handleChange} className="admin-input" />
-                </label>
-              </div>
-            )}
+            <p className="admin-muted">참가비와 결제는 받지 않습니다. 상은 후원 안내만 적습니다.</p>
             <label className="admin-field">
-              <span>상금 설명</span>
+              <span>후원 상 안내</span>
               <input name="prize" value={form.prize} onChange={handleChange} placeholder="1위 30만원 / 2위 15만원" className="admin-input" />
             </label>
             <div className="admin-form-row">

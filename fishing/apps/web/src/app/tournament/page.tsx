@@ -115,7 +115,7 @@ export default function TournamentPage() {
                         <div className="tournament-card-title">{t.title}</div>
                         {t.prizeAmount > 0 && (
                           <div className="tournament-card-prize">
-                            상금 {t.prizeAmount.toLocaleString()}원
+                            후원 상 {t.prizeAmount.toLocaleString()}원
                           </div>
                         )}
                       </div>
@@ -128,7 +128,7 @@ export default function TournamentPage() {
                       <div className="tournament-card-info">
                         <span>📅 {formatDate(t.startAt)} ~ {formatDate(t.endAt)}</span>
                         <span>👥 {t._count?.entries ?? 0}명 참가</span>
-                        <span>{t.isFree ? '무료' : `참가비 ${t.entryFee.toLocaleString()}원`}</span>
+                        <span>{t.isFree ? '무료' : '유료 참가 준비 중'}</span>
                       </div>
                     </div>
                   </div>

@@ -28,7 +28,7 @@ export default function AdminTournamentEntriesPage() {
     <div className="admin-page">
       <header className="admin-page-head">
         <h1>대회 참가 관리</h1>
-        <p>대회별 참가자·결제 상태를 확인합니다.</p>
+        <p>대회별 참가 상태를 확인합니다. 결제는 받지 않습니다.</p>
         <Link href="/admin/tournaments" className="admin-link">← 대회 관리로</Link>
       </header>
 
@@ -64,7 +64,7 @@ export default function AdminTournamentEntriesPage() {
                 <th>대회</th>
                 <th>참가자</th>
                 <th>이메일</th>
-                <th>결제</th>
+                <th>참가</th>
                 <th>순위</th>
                 <th>참가일</th>
               </tr>
