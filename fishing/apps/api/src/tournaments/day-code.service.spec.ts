@@ -6,8 +6,8 @@ describe('TournamentsService 일일 코드', () => {
   const prisma = {
     user: { findUnique: jest.fn() },
     tournament: { findUnique: jest.fn() },
-    tournamentEntry: { findUnique: jest.fn() },
-    tournamentDayCode: { findUnique: jest.fn(), upsert: jest.fn() },
+    tournamentEntry: { findUnique: jest.fn(), findMany: jest.fn() },
+    tournamentDayCode: { findUnique: jest.fn(), upsert: jest.fn(), findMany: jest.fn() },
   };
   const service = new TournamentsService(prisma as never);
 
@@ -96,6 +96,24 @@ describe('TournamentsService 일일 코드', () => {
       ForbiddenException,
     );
     expect(prisma.tournamentDayCode.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('참가 중인 진행 대회는 오늘 코드 값 없이 여부만 알려 준다', async () => {
+    prisma.tournamentEntry.findMany.mockResolvedValue([
+      { tournamentId: 'tour-1', tournament: { id: 'tour-1', title: '거제', region: '경남' } },
+      { tournamentId: 'tour-2', tournament: { id: 'tour-2', title: '춘천', region: null } },
+    ]);
+    prisma.tournamentDayCode.findMany.mockResolvedValue([{ tournamentId: 'tour-1' }]);
+
+    await expect(service.listMyActive('user-1', now)).resolves.toEqual([
+      { tournamentId: 'tour-1', title: '거제', region: '경남', codeDate: '2026-10-20', hasCode: true },
+      { tournamentId: 'tour-2', title: '춘천', region: null, codeDate: '2026-10-20', hasCode: false },
+    ]);
+    expect(prisma.tournamentEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: 'user-1', disqualified: false }),
+      }),
+    );
   });
 
   it('다른 코드는 거절한다', async () => {

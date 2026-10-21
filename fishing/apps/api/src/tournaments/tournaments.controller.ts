@@ -179,6 +179,15 @@ export class TournamentsController {
     return `\uFEFF${csv}`;
   }
 
+  @Get('me/active')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '내가 참가 중인 진행 대회. 오늘 코드 값은 포함하지 않음' })
+  async listMyActive(@CurrentUser() user: any) {
+    const result = await this.tournamentsService.listMyActive(user.id);
+    return { success: true, data: result };
+  }
+
   @Get(':id')
 
   @ApiOperation({ summary: '대회 상세' })
