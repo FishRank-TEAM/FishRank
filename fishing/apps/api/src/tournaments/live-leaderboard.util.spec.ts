@@ -53,6 +53,20 @@ describe('실시간 대회 순위', () => {
     ]);
   });
 
+  it('코드를 쓰는 대회는 그 대회에서 수락된 기록만 남긴다', () => {
+    const rows = buildLiveLeaderboard(
+      { ...tournament, id: 'tour-1', requireAcceptedDayCode: true },
+      [entry('a'), entry('b')],
+      [
+        { ...fish('a', 40, '2026-11-01T01:00:00.000Z'), claimedTournamentId: 'tour-1', dayCodeStatus: 'pending' },
+        { ...fish('b', 30, '2026-11-01T01:00:00.000Z'), claimedTournamentId: 'tour-1', dayCodeStatus: 'accepted' },
+        { ...fish('a', 55, '2026-11-01T02:00:00.000Z'), claimedTournamentId: 'other', dayCodeStatus: 'accepted' },
+      ],
+    );
+
+    expect(rows.map((row) => [row.userId, row.bestLengthCm])).toEqual([['b', 30]]);
+  });
+
   it('결과 CSV는 순위와 닉네임을 담는다', () => {
     const csv = leaderboardCsv([
       {

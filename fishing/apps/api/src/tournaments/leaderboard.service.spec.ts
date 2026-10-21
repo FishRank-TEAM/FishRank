@@ -5,12 +5,14 @@ describe('TournamentsService 실시간 순위', () => {
     user: { findUnique: jest.fn() },
     tournament: { findUnique: jest.fn() },
     tournamentEntry: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+    tournamentDayCode: { count: jest.fn() },
     catch: { findMany: jest.fn() },
   };
   const service = new TournamentsService(prisma as never);
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.tournamentDayCode.count.mockResolvedValue(0);
     prisma.tournament.findUnique.mockResolvedValue({
       id: 'tour-1',
       organizerId: 'org-1',
@@ -47,6 +49,54 @@ describe('TournamentsService 실시간 순위', () => {
     expect(rows).toEqual([
       expect.objectContaining({ userId: 'user-1', bestLengthCm: 32.5, bestCatchId: 'catch-1', rank: 1 }),
     ]);
+    expect(prisma.catch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.not.objectContaining({ dayCodeStatus: 'accepted' }),
+      }),
+    );
+  });
+
+  it('코드를 한 번이라도 등록한 대회는 수락된 제출만 집계한다', async () => {
+    prisma.tournamentDayCode.count.mockResolvedValue(2);
+    prisma.tournamentEntry.findMany.mockResolvedValue([
+      {
+        id: 'entry-1',
+        userId: 'user-1',
+        disqualified: false,
+        paymentStatus: 'free',
+        user: { id: 'user-1', nickname: '하나', profileImage: null },
+      },
+      {
+        id: 'entry-2',
+        userId: 'user-2',
+        disqualified: false,
+        paymentStatus: 'free',
+        user: { id: 'user-2', nickname: '둘', profileImage: null },
+      },
+    ]);
+    prisma.catch.findMany.mockResolvedValue([
+      {
+        id: 'accepted',
+        userId: 'user-2',
+        lengthCm: 30,
+        createdAt: new Date('2026-11-01T04:00:00.000Z'),
+        fishSpeciesId: 1,
+        claimedTournamentId: 'tour-1',
+        dayCodeStatus: 'accepted',
+      },
+    ]);
+
+    const rows = await service.getRanking('tour-1');
+
+    expect(rows.map((row) => row.bestCatchId)).toEqual(['accepted']);
+    expect(prisma.catch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          claimedTournamentId: 'tour-1',
+          dayCodeStatus: 'accepted',
+        }),
+      }),
+    );
   });
 
   it('실격은 참가 행을 지우지 않고 표시만 바꾼다', async () => {

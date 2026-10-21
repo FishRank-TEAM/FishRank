@@ -7,6 +7,8 @@ export type LeaderboardCatch = {
   status?: string;
   recordType?: string;
   deletedAt?: Date | null;
+  claimedTournamentId?: string | null;
+  dayCodeStatus?: string | null;
 };
 
 export type LeaderboardEntry = {
@@ -18,11 +20,13 @@ export type LeaderboardEntry = {
 };
 
 export type LeaderboardTournament = {
+  id?: string;
   fishSpeciesId?: number | null;
   minLengthCm?: number | null;
   maxLengthCm?: number | null;
   startAt: Date;
   endAt: Date;
+  requireAcceptedDayCode?: boolean;
 };
 
 export type LeaderboardRow = {
@@ -51,6 +55,10 @@ export function buildLiveLeaderboard(
     if (catch_.deletedAt) continue;
     if (catch_.status && catch_.status !== 'approved') continue;
     if (catch_.recordType && catch_.recordType !== 'certified') continue;
+    if (tournament.requireAcceptedDayCode) {
+      if (!tournament.id || catch_.claimedTournamentId !== tournament.id) continue;
+      if (catch_.dayCodeStatus !== 'accepted') continue;
+    }
     if (catch_.createdAt < tournament.startAt || catch_.createdAt > tournament.endAt) continue;
     if (tournament.fishSpeciesId && catch_.fishSpeciesId !== tournament.fishSpeciesId) continue;
     if (tournament.minLengthCm != null && catch_.lengthCm < Number(tournament.minLengthCm)) continue;

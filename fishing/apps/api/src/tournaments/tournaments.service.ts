@@ -37,7 +37,7 @@ export class TournamentsService {
     const t = await this.prisma.tournament.findUnique({
       where: { id },
       include: {
-        _count: { select: { entries: true } },
+        _count: { select: { entries: true, dayCodes: true } },
         entries: {
           where: { rank: { not: null } },
           include: { user: { select: { id: true, nickname: true, profileImage: true } } },
@@ -91,6 +91,8 @@ export class TournamentsService {
     });
     if (!entries.length) return [];
 
+    const dayCodeCount = await this.prisma.tournamentDayCode.count({ where: { tournamentId } });
+    const requireAcceptedDayCode = dayCodeCount > 0;
     const catches = await this.prisma.catch.findMany({
       where: {
         deletedAt: null,
@@ -98,17 +100,30 @@ export class TournamentsService {
         recordType: 'certified',
         userId: { in: entries.map((entry) => entry.userId) },
         createdAt: { gte: tournament.startAt, lte: tournament.endAt },
+        ...(requireAcceptedDayCode
+          ? { claimedTournamentId: tournamentId, dayCodeStatus: 'accepted' }
+          : {}),
       },
-      select: { id: true, userId: true, lengthCm: true, createdAt: true, fishSpeciesId: true },
+      select: {
+        id: true,
+        userId: true,
+        lengthCm: true,
+        createdAt: true,
+        fishSpeciesId: true,
+        claimedTournamentId: true,
+        dayCodeStatus: true,
+      },
     });
 
     return buildLiveLeaderboard(
       {
+        id: tournament.id,
         fishSpeciesId: tournament.fishSpeciesId,
         minLengthCm: tournament.minLengthCm == null ? null : Number(tournament.minLengthCm),
         maxLengthCm: tournament.maxLengthCm == null ? null : Number(tournament.maxLengthCm),
         startAt: tournament.startAt,
         endAt: tournament.endAt,
+        requireAcceptedDayCode,
       },
       entries,
       catches.map((catch_) => ({

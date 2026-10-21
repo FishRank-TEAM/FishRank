@@ -128,7 +128,11 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
 
           <div className="detail-card">
             <h3 className="detail-card-title">현재 순위</h3>
-            <p className="admin-muted">대회 기간의 승인된 공식 인증만 반영합니다.</p>
+            <p className="admin-muted">
+              {(data._count?.dayCodes ?? 0) > 0
+                ? '오늘의 코드를 운영자가 수락한 공식 인증만 순위에 들어갑니다.'
+                : '대회 기간의 승인된 공식 인증만 반영합니다.'}
+            </p>
             {rankingData && rankingData.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {rankingData.slice(0, 10).map((entry: {
