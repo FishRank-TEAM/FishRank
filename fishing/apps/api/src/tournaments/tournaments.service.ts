@@ -84,6 +84,36 @@ export class TournamentsService {
     });
   }
 
+  async listMyActive(userId: string, now = new Date()) {
+    const entries = await this.prisma.tournamentEntry.findMany({
+      where: {
+        userId,
+        disqualified: false,
+        paymentStatus: { in: ['free', 'paid'] },
+        tournament: { status: 'active', startAt: { lte: now }, endAt: { gte: now } },
+      },
+      include: {
+        tournament: { select: { id: true, title: true, region: true } },
+      },
+      orderBy: { joinedAt: 'asc' },
+    });
+    if (!entries.length) return [];
+
+    const codeDate = seoulDateKey(now);
+    const codes = await this.prisma.tournamentDayCode.findMany({
+      where: { codeDate, tournamentId: { in: entries.map((entry) => entry.tournamentId) } },
+      select: { tournamentId: true },
+    });
+    const withCode = new Set(codes.map((row) => row.tournamentId));
+    return entries.map((entry) => ({
+      tournamentId: entry.tournamentId,
+      title: entry.tournament.title,
+      region: entry.tournament.region,
+      codeDate,
+      hasCode: withCode.has(entry.tournamentId),
+    }));
+  }
+
   async getRanking(tournamentId: string) {
     const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');

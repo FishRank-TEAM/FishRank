@@ -83,8 +83,12 @@ api.interceptors.response.use(
 
 export async function uploadCertifiedCatch(
   uri: string,
-  locationName?: string,
-  memo?: string,
+  options?: {
+    locationName?: string;
+    memo?: string;
+    tournamentId?: string;
+    dayCode?: string;
+  },
 ) {
   const form = new FormData();
   form.append('image', {
@@ -92,8 +96,12 @@ export async function uploadCertifiedCatch(
     name: `catch-${Date.now()}.jpg`,
     type: 'image/jpeg',
   } as unknown as Blob);
-  if (locationName) form.append('locationName', locationName);
-  if (memo) form.append('memo', memo);
+  if (options?.locationName) form.append('locationName', options.locationName);
+  if (options?.memo) form.append('memo', options.memo);
+  if (options?.tournamentId && options?.dayCode) {
+    form.append('tournamentId', options.tournamentId);
+    form.append('dayCode', options.dayCode);
+  }
 
   const session = await api.post('/catches/capture-sessions');
   form.append('captureToken', session.data.data.captureToken);

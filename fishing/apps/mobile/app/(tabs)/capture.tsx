@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   View,
   Text,
@@ -17,8 +18,16 @@ import CaptureOverlay from '@/components/CaptureOverlay';
 import CaptureToolbar from '@/components/capture/CaptureToolbar';
 import HeroBackground from '@/components/HeroBackground';
 import { useDeviceLevel } from '@/hooks/useDeviceLevel';
-import { uploadCertifiedCatch } from '@/lib/api';
+import { api, uploadCertifiedCatch } from '@/lib/api';
+import { useAuthStore } from '@/store/auth.store';
 import { colors } from '@/theme/colors';
+
+type ActiveTournament = {
+  tournamentId: string;
+  title: string;
+  region?: string | null;
+  hasCode: boolean;
+};
 
 export default function CaptureScreen() {
   const cameraRef = useRef<CameraView>(null);
@@ -27,7 +36,16 @@ export default function CaptureScreen() {
   const [uploading, setUploading] = useState(false);
   const [locationName, setLocationName] = useState('');
   const [memo, setMemo] = useState('');
+  const [tournamentId, setTournamentId] = useState<string | null>(null);
+  const [dayCode, setDayCode] = useState('');
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const { data: activeTournaments } = useQuery({
+    queryKey: ['my-active-tournaments'],
+    queryFn: async () => (await api.get('/tournaments/me/active')).data.data as ActiveTournament[],
+    enabled: isLoggedIn,
+  });
+  const selectedTournament = activeTournaments?.find((item) => item.tournamentId === tournamentId);
 
   const [torch, setTorch] = useState(false);
   const [flash, setFlash] = useState<FlashMode>('auto');
@@ -81,13 +99,18 @@ export default function CaptureScreen() {
 
   async function handleUpload() {
     if (!previewUri || uploading) return;
+    if (selectedTournament?.hasCode && dayCode.trim().length < 4) {
+      Alert.alert('대회 코드', '현장에 안내된 오늘 코드를 입력해 주세요.');
+      return;
+    }
     setUploading(true);
     try {
-      const res = await uploadCertifiedCatch(
-        previewUri,
-        locationName.trim() || undefined,
-        memo.trim() || undefined,
-      );
+      const res = await uploadCertifiedCatch(previewUri, {
+        locationName: locationName.trim() || undefined,
+        memo: memo.trim() || undefined,
+        tournamentId: selectedTournament?.hasCode ? selectedTournament.tournamentId : undefined,
+        dayCode: selectedTournament?.hasCode ? dayCode.trim() : undefined,
+      });
       const { message, status } = res.data.data;
       setPreviewUri(null);
       Alert.alert(status === 'approved' ? '인증 완료' : '업로드 완료', message);
@@ -156,6 +179,36 @@ export default function CaptureScreen() {
           value={memo}
           onChangeText={setMemo}
         />
+        {!!activeTournaments?.length && (
+          <View style={styles.tournamentRow}>
+            <Pressable
+              style={[styles.tournamentChip, !tournamentId && styles.tournamentChipOn]}
+              onPress={() => setTournamentId(null)}
+            >
+              <Text style={styles.tournamentChipText}>대회 없음</Text>
+            </Pressable>
+            {activeTournaments.map((item) => (
+              <Pressable
+                key={item.tournamentId}
+                style={[styles.tournamentChip, tournamentId === item.tournamentId && styles.tournamentChipOn]}
+                onPress={() => setTournamentId(item.tournamentId)}
+              >
+                <Text style={styles.tournamentChipText}>{item.title}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+        {selectedTournament?.hasCode && (
+          <TextInput
+            style={styles.input}
+            placeholder="오늘 대회 코드"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="characters"
+            maxLength={12}
+            value={dayCode}
+            onChangeText={setDayCode}
+          />
+        )}
         <Pressable style={styles.shutter} onPress={handleCapture} disabled={uploading}>
           <Text style={styles.shutterText}>촬영</Text>
         </Pressable>
@@ -168,6 +221,17 @@ export default function CaptureScreen() {
           ) : null}
           <Text style={styles.previewTitle}>촬영 미리보기</Text>
           <Text style={styles.previewHint}>사진을 확인한 뒤 인증 업로드하거나 다시 촬영하세요.</Text>
+          {selectedTournament?.hasCode && (
+            <TextInput
+              style={[styles.input, { marginTop: 16 }]}
+              placeholder="오늘 대회 코드"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="characters"
+              maxLength={12}
+              value={dayCode}
+              onChangeText={setDayCode}
+            />
+          )}
           <View style={styles.previewActions}>
             <Pressable
               style={styles.retakeBtn}
@@ -264,6 +328,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     fontSize: 15,
   },
+  tournamentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tournamentChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: colors.surfaceMuted,
+  },
+  tournamentChipOn: { borderColor: colors.oceanBright, backgroundColor: colors.oceanLight },
+  tournamentChipText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
   shutter: {
     backgroundColor: colors.oceanBright,
     borderRadius: 8,
