@@ -4,7 +4,25 @@ import { useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import api from '@/lib/api';
+import { getImageUrl } from '@/lib/images';
 import PageHeader from '@/components/layout/PageHeader';
+
+const STATUS_OPTIONS = [
+  { value: 'upcoming', label: '예정' },
+  { value: 'active', label: '진행중' },
+  { value: 'closed', label: '마감' },
+  { value: 'finished', label: '종료' },
+] as const;
+
+const NOTE_LABELS: Record<string, string> = {
+  date_missing: '촬영 시각 없음',
+  gps_missing: 'GPS 없음',
+};
+
+function noteLabel(note?: string | null) {
+  if (!note) return '';
+  return note.split(',').map((part) => NOTE_LABELS[part] ?? part).join(', ');
+}
 
 const EMPTY = {
   title: '',
@@ -28,6 +46,7 @@ export default function OrganizeTournamentPage() {
   const [form, setForm] = useState(EMPTY);
   const [message, setMessage] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [codes, setCodes] = useState<Record<string, string>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['organized-tournaments'],
@@ -70,6 +89,42 @@ export default function OrganizeTournamentPage() {
     queryKey: ['tournament-participants', openId],
     queryFn: async () => (await api.get(`/tournaments/organized/${openId}/participants`)).data.data,
     enabled: !!openId,
+  });
+
+  const { data: managedCode } = useQuery({
+    queryKey: ['tournament-day-code', openId],
+    queryFn: async () => (await api.get(`/tournaments/organized/${openId}/day-code`)).data.data as { codeDate: string; code: string | null },
+    enabled: !!openId,
+  });
+
+  const { data: claims } = useQuery({
+    queryKey: ['tournament-day-claims', openId],
+    queryFn: async () => (await api.get(`/tournaments/organized/${openId}/day-code-claims`)).data.data,
+    enabled: !!openId,
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      api.patch(`/tournaments/organized/${id}/status`, { status }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['organized-tournaments'] }),
+  });
+
+  const codeMutation = useMutation({
+    mutationFn: ({ id, code }: { id: string; code: string }) => api.post(`/tournaments/${id}/day-code`, { code }),
+    onSuccess: (_data, variables) => {
+      setMessage('오늘 코드를 저장했습니다. 현장에 있는 참가자에게만 알려 주세요.');
+      queryClient.invalidateQueries({ queryKey: ['tournament-day-code', variables.id] });
+    },
+    onError: (error: { response?: { data?: { message?: string | string[] } } }) => {
+      const apiMessage = error.response?.data?.message;
+      setMessage(Array.isArray(apiMessage) ? apiMessage.join(', ') : apiMessage || '코드를 저장하지 못했습니다.');
+    },
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: ({ tournamentId, catchId, status }: { tournamentId: string; catchId: string; status: 'accepted' | 'rejected' }) =>
+      api.patch(`/tournaments/organized/${tournamentId}/day-code-claims/${catchId}`, { status }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tournament-day-claims', openId] }),
   });
 
   const disqualifyMutation = useMutation({
@@ -139,39 +194,127 @@ export default function OrganizeTournamentPage() {
             <p className="admin-muted">아직 없습니다.</p>
           ) : (
             data.map((tournament: { id: string; title: string; region?: string | null; sponsorName?: string | null; status: string }) => (
-              <div key={tournament.id}>
+              <div key={tournament.id} style={{ marginBottom: 16 }}>
                 <p>
                   <Link href={`/tournament/${tournament.id}`}>{tournament.title}</Link>
                   <span className="admin-muted">
-                    {' '}· {tournament.status}
                     {tournament.region ? ` · ${tournament.region}` : ''}
                     {tournament.sponsorName ? ` · ${tournament.sponsorName}` : ''}
                   </span>
                 </p>
                 <div className="admin-row-actions">
+                  <select
+                    className="admin-select-sm"
+                    value={tournament.status}
+                    onChange={(event) => statusMutation.mutate({ id: tournament.id, status: event.target.value })}
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
                   <button type="button" className="admin-btn-ghost" onClick={() => downloadCsv(tournament.id)}>결과 CSV</button>
-                  <button type="button" className="admin-btn-ghost" onClick={() => setOpenId(openId === tournament.id ? null : tournament.id)}>참가자</button>
+                  <button type="button" className="admin-btn-ghost" onClick={() => setOpenId(openId === tournament.id ? null : tournament.id)}>
+                    {openId === tournament.id ? '닫기' : '운영'}
+                  </button>
                 </div>
                 {openId === tournament.id && (
-                  <ul>
-                    {(participants ?? []).map((entry: { id: string; userId: string; disqualified: boolean; user: { nickname: string } }) => (
-                      <li key={entry.id}>
-                        {entry.user.nickname}
-                        {entry.disqualified ? ' · 실격' : ''}
-                        <button
-                          type="button"
-                          className="admin-btn-ghost"
-                          onClick={() => disqualifyMutation.mutate({
-                            tournamentId: tournament.id,
-                            userId: entry.userId,
-                            disqualified: !entry.disqualified,
-                          })}
-                        >
-                          {entry.disqualified ? '복귀' : '실격'}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  <div>
+                    <div className="admin-row-actions">
+                      <input
+                        className="admin-input"
+                        value={codes[tournament.id] ?? managedCode?.code ?? ''}
+                        placeholder="오늘 코드 4~12자"
+                        maxLength={12}
+                        onChange={(event) => setCodes((prev) => ({ ...prev, [tournament.id]: event.target.value }))}
+                      />
+                      <button
+                        type="button"
+                        className="admin-btn-primary"
+                        disabled={codeMutation.isPending}
+                        onClick={() => codeMutation.mutate({
+                          id: tournament.id,
+                          code: codes[tournament.id] ?? managedCode?.code ?? '',
+                        })}
+                      >
+                        오늘 코드 저장
+                      </button>
+                    </div>
+                    <p className="admin-muted">
+                      {managedCode?.code
+                        ? `${managedCode.codeDate} 코드가 등록되어 있습니다. 공개 페이지에는 코드가 나오지 않습니다.`
+                        : '오늘 코드가 없으면 순위는 기간 안 인증 기록을 그대로 집계합니다.'}
+                    </p>
+                    <h3>코드 제출</h3>
+                    {!claims?.length ? (
+                      <p className="admin-muted">제출이 없습니다.</p>
+                    ) : (
+                      <ul>
+                        {claims.map((claim: {
+                          id: string;
+                          lengthCm?: string | number | null;
+                          status: string;
+                          imageUrl?: string | null;
+                          claimedDayCode?: string | null;
+                          dayCodeStatus?: string | null;
+                          integrityNote?: string | null;
+                          user: { nickname: string };
+                        }) => {
+                          const image = getImageUrl(claim.imageUrl);
+                          const flags = noteLabel(claim.integrityNote);
+                          return (
+                            <li key={claim.id}>
+                              {claim.user.nickname}
+                              {' · '}{claim.claimedDayCode}
+                              {' · '}{claim.dayCodeStatus}
+                              {claim.lengthCm ? ` · ${Number(claim.lengthCm).toFixed(1)}cm` : ''}
+                              {' · 인증 '}{claim.status}
+                              {flags ? ` · ${flags}` : ''}
+                              {image && (
+                                <>
+                                  {' '}
+                                  <a href={image} target="_blank" rel="noreferrer">사진</a>
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                className="admin-btn-primary"
+                                onClick={() => claimMutation.mutate({ tournamentId: tournament.id, catchId: claim.id, status: 'accepted' })}
+                              >
+                                수락
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-btn-ghost"
+                                onClick={() => claimMutation.mutate({ tournamentId: tournament.id, catchId: claim.id, status: 'rejected' })}
+                              >
+                                거절
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                    <h3>참가자</h3>
+                    <ul>
+                      {(participants ?? []).map((entry: { id: string; userId: string; disqualified: boolean; user: { nickname: string } }) => (
+                        <li key={entry.id}>
+                          {entry.user.nickname}
+                          {entry.disqualified ? ' · 실격' : ''}
+                          <button
+                            type="button"
+                            className="admin-btn-ghost"
+                            onClick={() => disqualifyMutation.mutate({
+                              tournamentId: tournament.id,
+                              userId: entry.userId,
+                              disqualified: !entry.disqualified,
+                            })}
+                          >
+                            {entry.disqualified ? '복귀' : '실격'}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             ))

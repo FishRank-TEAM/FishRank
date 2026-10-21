@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { TournamentsService } from './tournaments.service';
 
 describe('TournamentsService 운영자 대회', () => {
@@ -6,6 +6,7 @@ describe('TournamentsService 운영자 대회', () => {
     user: { findUnique: jest.fn() },
     tournament: { findUnique: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
     tournamentDayCode: { upsert: jest.fn() },
+    catch: { findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
   };
   const service = new TournamentsService(prisma as never);
   const dto = {
@@ -71,5 +72,57 @@ describe('TournamentsService 운영자 대회', () => {
     await expect(
       service.setTodayDayCode('org-2', 'tour-1', 'SHOP1', new Date('2026-10-20T03:00:00.000Z')),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('운영자는 자기 대회를 진행 중으로 연다', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'org-1', role: 'organizer' });
+    prisma.tournament.findUnique.mockResolvedValue({ id: 'tour-1', organizerId: 'org-1' });
+    prisma.tournament.update.mockResolvedValue({ id: 'tour-1', status: 'active' });
+
+    await expect(service.updateOrganizerStatus('org-1', 'tour-1', 'active')).resolves.toEqual({
+      id: 'tour-1',
+      status: 'active',
+    });
+  });
+
+  it('알 수 없는 대회 상태는 저장하지 않는다', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'org-1', role: 'organizer' });
+    prisma.tournament.findUnique.mockResolvedValue({ id: 'tour-1', organizerId: 'org-1' });
+
+    await expect(service.updateOrganizerStatus('org-1', 'tour-1', 'paid')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(prisma.tournament.update).not.toHaveBeenCalled();
+  });
+
+  it('운영자는 자기 대회에 제출된 코드만 수락한다', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'org-1', role: 'organizer' });
+    prisma.tournament.findUnique.mockResolvedValue({ id: 'tour-1', organizerId: 'org-1' });
+    prisma.catch.findFirst.mockResolvedValue({ id: 'catch-1', claimedDayCode: 'SHOP1' });
+    prisma.catch.update.mockResolvedValue({ id: 'catch-1', dayCodeStatus: 'accepted' });
+
+    await expect(service.reviewDayCodeClaim('org-1', 'tour-1', 'catch-1', 'accepted')).resolves.toEqual({
+      id: 'catch-1',
+      dayCodeStatus: 'accepted',
+    });
+    expect(prisma.catch.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'catch-1',
+        deletedAt: null,
+        claimedTournamentId: 'tour-1',
+        claimedDayCode: { not: null },
+      },
+    });
+  });
+
+  it('다른 대회 제출은 수락하지 못한다', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'org-1', role: 'organizer' });
+    prisma.tournament.findUnique.mockResolvedValue({ id: 'tour-1', organizerId: 'org-1' });
+    prisma.catch.findFirst.mockResolvedValue(null);
+
+    await expect(service.reviewDayCodeClaim('org-1', 'tour-1', 'catch-9', 'accepted')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(prisma.catch.update).not.toHaveBeenCalled();
   });
 });
