@@ -54,6 +54,9 @@ export class TournamentsService {
     const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
     if (tournament.status !== 'active') throw new BadRequestException('참가 가능한 대회가 아닙니다.');
+    if (!tournament.isFree || tournament.entryFee > 0) {
+      throw new BadRequestException('유료 참가는 아직 열리지 않았습니다.');
+    }
 
     const existing = await this.prisma.tournamentEntry.findUnique({
       where: { tournamentId_userId: { tournamentId, userId } },
@@ -69,8 +72,8 @@ export class TournamentsService {
       data: {
         tournamentId,
         userId,
-        paymentStatus: tournament.isFree ? 'free' : 'pending',
-        paymentAmount: tournament.entryFee,
+        paymentStatus: 'free',
+        paymentAmount: 0,
       },
     });
   }
@@ -137,8 +140,9 @@ export class TournamentsService {
   async create(adminId: string, dto: any) {
     const admin = await this.prisma.user.findUnique({ where: { id: adminId } });
     if (admin?.role !== 'admin') throw new ForbiddenException('관리자만 대회를 생성할 수 있습니다.');
+    this.assertFreeEntry(dto);
 
-    return this.prisma.tournament.create({ data: dto });
+    return this.prisma.tournament.create({ data: { ...dto, isFree: true, entryFee: 0 } });
   }
 
   // 어드민: 대회 상태 변경
@@ -153,8 +157,9 @@ export class TournamentsService {
   async update(adminId: string, id: string, dto: any) {
     const admin = await this.prisma.user.findUnique({ where: { id: adminId } });
     if (admin?.role !== 'admin') throw new ForbiddenException();
+    this.assertFreeEntry(dto);
 
-    return this.prisma.tournament.update({ where: { id }, data: dto });
+    return this.prisma.tournament.update({ where: { id }, data: { ...dto, isFree: true, entryFee: 0 } });
   }
 
   // 어드민: 대회 삭제

@@ -95,7 +95,7 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
           <h1 className="tournament-detail-title">{data.title}</h1>
           {data.prizeAmount > 0 && (
             <div className="tournament-detail-prize">
-              총 상금 {data.prizeAmount.toLocaleString()}원
+              후원 상 {data.prizeAmount.toLocaleString()}원
             </div>
           )}
           <div className="tournament-detail-meta">
@@ -121,7 +121,7 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
 
           {data.prize && (
             <div className="tournament-prize-block">
-              <h3>🏆 상금 구성</h3>
+              <h3>🏆 후원 상</h3>
               <pre className="content-prose-sm" style={{ color: 'rgba(255,255,255,0.85)' }}>{data.prize}</pre>
             </div>
           )}
@@ -172,11 +172,11 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
             <div className="tournament-join-fee-row">
               <span>참가비</span>
               <span className={`tournament-join-fee${isFree ? ' free' : ''}`}>
-                {isFree ? '무료' : `${data.entryFee.toLocaleString()}원`}
+                {isFree ? '무료' : '준비 중'}
               </span>
             </div>
             {!isFree && (
-              <div className="tournament-escrow-note">🔒 에스크로 결제로 안전하게 보호됩니다</div>
+              <div className="tournament-escrow-note">유료 참가와 결제는 아직 열리지 않았습니다. 상은 후원으로만 안내합니다.</div>
             )}
 
             {myEntry ? (
@@ -191,16 +191,16 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
               <button
                 type="button"
                 onClick={() => joinMutation.mutate()}
-                disabled={!isActive || joinMutation.isPending}
+                disabled={!isActive || !isFree || joinMutation.isPending}
                 className="site-btn-primary"
               >
                 {joinMutation.isPending
                   ? '처리 중...'
-                  : isActive
-                    ? isFree
+                  : !isFree
+                    ? '유료 참가는 아직 열리지 않았습니다'
+                    : isActive
                       ? '무료 참가하기'
-                      : `${data.entryFee.toLocaleString()}원 결제 후 참가`
-                    : '참가 불가'}
+                      : '참가 불가'}
               </button>
             ) : (
               <Link href="/auth/login" className="site-btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
@@ -209,9 +209,9 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
             )}
 
             <p className="tournament-join-note">
-              * 유료 대회는 에스크로 결제 시스템을 통해 처리됩니다
+              * 참가비 결제와 에스크로는 아직 없습니다
               <br />
-              * 결제 완료 후 취소/환불 불가
+              * 무료 대회만 참가할 수 있습니다
             </p>
           </div>
         </aside>

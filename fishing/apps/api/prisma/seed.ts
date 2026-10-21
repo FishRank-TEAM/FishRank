@@ -450,15 +450,15 @@ async function main() {
       description: '전국 낚시인들의 배스 실력을 겨루는 월간 대회입니다. AI 측정 S등급 기록만 인정됩니다.',
       category: 'freshwater',
       fishSpeciesId: 1,
-      isFree: false,
-      entryFee: 5000,
-      prize: '1위 30만원 / 2위 15만원 / 3위 5만원',
+      isFree: true,
+      entryFee: 0,
+      prize: '후원 상품. 1위 30만원 상당 / 2위 15만원 상당 / 3위 5만원 상당',
       prizeAmount: 500000,
       maxEntries: 200,
       startAt: new Date(now.getFullYear(), now.getMonth(), 1),
       endAt: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59),
       status: 'active',
-      rules: '1. AI 측정 S등급 기록만 인정\n2. 동일 어종 최고 기록 1개만 집계\n3. 참가비는 에스크로 결제 (환불 불가)',
+      rules: '1. AI 측정 S등급 기록만 인정\n2. 동일 어종 최고 기록 1개만 집계\n3. 참가비 없음. 상은 후원',
     },
     {
       title: '무료 입문자 대회 — 민물 어종',
@@ -480,15 +480,15 @@ async function main() {
       description: '방어, 참돔, 광어 등 바다 대형 어종 대회. 선상낚시 기록만 인정.',
       category: 'saltwater',
       fishSpeciesId: null,
-      isFree: false,
-      entryFee: 10000,
-      prize: '1위 50만원 / 2위 20만원 / 3위 10만원',
+      isFree: true,
+      entryFee: 0,
+      prize: '후원 상품. 1위 50만원 상당 / 2위 20만원 상당 / 3위 10만원 상당',
       prizeAmount: 800000,
       maxEntries: 150,
       startAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
       endAt: new Date(now.getFullYear(), now.getMonth() + 2, 31, 23, 59, 59),
       status: 'upcoming',
-      rules: '1. 바다 어종만 참가 가능\n2. AI 측정 S등급 기록만 인정\n3. 에스크로 결제 필수',
+      rules: '1. 바다 어종만 참가 가능\n2. AI 측정 S등급 기록만 인정\n3. 참가비 없음. 상은 후원',
     },
   ];
 
@@ -496,6 +496,18 @@ async function main() {
     const existing = await prisma.tournament.findFirst({ where: { title: t.title } });
     if (!existing) {
       await prisma.tournament.create({ data: t as any });
+      continue;
+    }
+    if ((existing.rules ?? '').includes('에스크로') || existing.entryFee > 0 || !existing.isFree) {
+      await prisma.tournament.update({
+        where: { id: existing.id },
+        data: {
+          isFree: true,
+          entryFee: 0,
+          prize: t.prize,
+          rules: t.rules,
+        },
+      });
     }
   }
 
