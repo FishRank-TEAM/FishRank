@@ -8,6 +8,28 @@ export const CERTIFIED_MAX_PHOTO_AGE_HOURS = 72;
 /** EXIF GPS와 사용자가 적은 장소가 이보다 멀면 인증 업로드를 거절한다. */
 export const GPS_CLAIM_MISMATCH_KM = 50;
 
+/** 대회 포인트를 적고 반경을 비우면 이 거리를 쓴다. */
+export const DEFAULT_SPOT_RADIUS_KM = 5;
+
+export function assertWithinSpot(
+  exifLat: number | undefined,
+  exifLng: number | undefined,
+  spot: { lat: number; lng: number; radiusKm: number } | null,
+): { ok: true; unverified: boolean } | { ok: false; reason: string } {
+  if (!spot) return { ok: true, unverified: false };
+  if (exifLat === undefined || exifLng === undefined || !isPlausibleGps(exifLat, exifLng)) {
+    return { ok: true, unverified: true };
+  }
+  const distance = haversineKm(exifLat, exifLng, spot.lat, spot.lng);
+  if (distance > spot.radiusKm) {
+    return {
+      ok: false,
+      reason: `사진 GPS가 대회 포인트에서 ${spot.radiusKm}km보다 멀리 있습니다.`,
+    };
+  }
+  return { ok: true, unverified: false };
+}
+
 export async function computeImageHash(filePath: string): Promise<string> {
   const buffer = await readFile(filePath);
   return createHash('sha256').update(buffer).digest('hex');

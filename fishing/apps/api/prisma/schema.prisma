@@ -338,6 +338,9 @@ model Tournament {
   minLengthCm   Decimal?  @map("min_length_cm") @db.Decimal(5, 1)
   maxLengthCm   Decimal?  @map("max_length_cm") @db.Decimal(5, 1)
   sponsorName   String?   @map("sponsor_name") @db.VarChar(80)
+  spotLat       Decimal?  @map("spot_lat") @db.Decimal(9, 6)
+  spotLng       Decimal?  @map("spot_lng") @db.Decimal(9, 6)
+  spotRadiusKm  Decimal?  @map("spot_radius_km") @db.Decimal(4, 1)
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 

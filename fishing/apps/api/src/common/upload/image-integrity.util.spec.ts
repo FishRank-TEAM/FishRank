@@ -1,4 +1,4 @@
-import { assertGpsSanity, haversineKm, isPlausibleGps } from './image-integrity.util';
+import { assertGpsSanity, assertWithinSpot, haversineKm, isPlausibleGps } from './image-integrity.util';
 
 describe('GPS 무결성', () => {
   it('범위 밖과 0,0은 좌표로 보지 않는다', () => {
@@ -21,5 +21,13 @@ describe('GPS 무결성', () => {
 
     expect(assertGpsSanity(undefined, undefined, { lat: 35, lng: 129 }).ok).toBe(true);
     expect(assertGpsSanity(0, 0).ok).toBe(false);
+  });
+
+  it('대회 포인트 반경 밖은 거절하고, GPS가 없으면 확인 불가로 남긴다', () => {
+    const spot = { lat: 37.5665, lng: 126.978, radiusKm: 5 };
+    expect(assertWithinSpot(37.57, 126.98, spot)).toEqual({ ok: true, unverified: false });
+    expect(assertWithinSpot(35.1796, 129.0756, spot).ok).toBe(false);
+    expect(assertWithinSpot(undefined, undefined, spot)).toEqual({ ok: true, unverified: true });
+    expect(assertWithinSpot(35.1796, 129.0756, null)).toEqual({ ok: true, unverified: false });
   });
 });

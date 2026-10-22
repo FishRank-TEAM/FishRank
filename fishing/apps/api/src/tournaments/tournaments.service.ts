@@ -1,18 +1,23 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { haversineKm, isPlausibleGps } from '../common/upload/image-integrity.util';
 import { assertDayCodePhoto, normalizeDayCode, seoulDateKey } from './day-code.util';
 import { buildLiveLeaderboard, leaderboardCsv } from './live-leaderboard.util';
+
+export type TournamentSpot = { lat: number; lng: number; radiusKm: number };
 
 export type DayCodeClaim = {
   claimedTournamentId: string | null;
   claimedDayCode: string | null;
   dayCodeStatus: string | null;
+  spot: TournamentSpot | null;
 };
 
 const EMPTY_DAY_CODE_CLAIM: DayCodeClaim = {
   claimedTournamentId: null,
   claimedDayCode: null,
   dayCodeStatus: null,
+  spot: null,
 };
 
 @Injectable()
@@ -38,6 +43,7 @@ export class TournamentsService {
       where: { id },
       include: {
         _count: { select: { entries: true, dayCodes: true } },
+        organizer: { select: { nickname: true } },
         entries: {
           where: { rank: { not: null } },
           include: { user: { select: { id: true, nickname: true, profileImage: true } } },
@@ -296,7 +302,12 @@ export class TournamentsService {
       if (!photo.ok) throw new BadRequestException(photo.reason);
     }
 
-    return { claimedTournamentId: tournamentId, claimedDayCode: code, dayCodeStatus: 'pending' };
+    return {
+      claimedTournamentId: tournamentId,
+      claimedDayCode: code,
+      dayCodeStatus: 'pending',
+      spot: readTournamentSpot(tournament),
+    };
   }
 
   async listParticipants(actorId: string, tournamentId: string) {
@@ -321,8 +332,9 @@ export class TournamentsService {
   }
 
   async listDayCodeClaims(actorId: string, tournamentId: string) {
-    await this.assertManagesTournament(actorId, tournamentId);
-    return this.prisma.catch.findMany({
+    const tournament = await this.assertManagesTournament(actorId, tournamentId);
+    const spot = readTournamentSpot(tournament);
+    const rows = await this.prisma.catch.findMany({
       where: {
         deletedAt: null,
         claimedTournamentId: tournamentId,
@@ -337,11 +349,31 @@ export class TournamentsService {
         dayCodeStatus: true,
         integrityNote: true,
         photoTakenAt: true,
+        exifLat: true,
+        exifLng: true,
         createdAt: true,
         user: { select: { id: true, nickname: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
+    });
+    return rows.map((row) => {
+      const distance = spot && row.exifLat != null && row.exifLng != null
+        ? Math.round(haversineKm(Number(row.exifLat), Number(row.exifLng), spot.lat, spot.lng) * 10) / 10
+        : null;
+      return {
+        id: row.id,
+        lengthCm: row.lengthCm,
+        status: row.status,
+        imageUrl: row.imageUrl,
+        claimedDayCode: row.claimedDayCode,
+        dayCodeStatus: row.dayCodeStatus,
+        integrityNote: row.integrityNote,
+        photoTakenAt: row.photoTakenAt,
+        createdAt: row.createdAt,
+        user: row.user,
+        spotDistanceKm: distance,
+      };
     });
   }
 
@@ -471,7 +503,28 @@ export class TournamentsService {
       endAt,
       rules: dto.rules?.trim() || null,
       status: dto.status || 'upcoming',
+      ...this.parseSpot(dto),
     };
+  }
+
+  private parseSpot(dto: OrganizerTournamentWrite) {
+    const lat = dto.spotLat ?? null;
+    const lng = dto.spotLng ?? null;
+    const radius = dto.spotRadiusKm ?? null;
+    if (lat == null && lng == null && radius == null) {
+      return { spotLat: null, spotLng: null, spotRadiusKm: null };
+    }
+    if (lat == null || lng == null) {
+      throw new BadRequestException('포인트 위도와 경도를 함께 입력해 주세요.');
+    }
+    if (!isPlausibleGps(lat, lng)) {
+      throw new BadRequestException('포인트 좌표가 올바르지 않습니다.');
+    }
+    const spotRadiusKm = radius ?? 5;
+    if (spotRadiusKm < 0.5 || spotRadiusKm > 30) {
+      throw new BadRequestException('포인트 반경은 0.5~30km입니다.');
+    }
+    return { spotLat: lat, spotLng: lng, spotRadiusKm };
   }
 }
 
@@ -493,4 +546,20 @@ type OrganizerTournamentWrite = {
   status?: string;
   entryFee?: number;
   isFree?: boolean;
+  spotLat?: number | null;
+  spotLng?: number | null;
+  spotRadiusKm?: number | null;
 };
+
+function readTournamentSpot(tournament: {
+  spotLat?: unknown;
+  spotLng?: unknown;
+  spotRadiusKm?: unknown;
+}): TournamentSpot | null {
+  if (tournament.spotLat == null || tournament.spotLng == null) return null;
+  const lat = Number(tournament.spotLat);
+  const lng = Number(tournament.spotLng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const radius = tournament.spotRadiusKm == null ? 5 : Number(tournament.spotRadiusKm);
+  return { lat, lng, radiusKm: Number.isFinite(radius) ? radius : 5 };
+}

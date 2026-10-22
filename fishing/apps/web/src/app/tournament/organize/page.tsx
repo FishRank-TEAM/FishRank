@@ -18,6 +18,7 @@ const NOTE_LABELS: Record<string, string> = {
   date_missing: '촬영 시각 없음',
   gps_missing: 'GPS 없음',
   code_date_unverified: '촬영일을 코드 날짜와 대조하지 못함',
+  spot_unverified: '포인트 GPS를 확인하지 못함',
 };
 
 function noteLabel(note?: string | null) {
@@ -40,6 +41,9 @@ const EMPTY = {
   startAt: '',
   endAt: '',
   rules: '',
+  spotLat: '',
+  spotLng: '',
+  spotRadiusKm: '',
 };
 
 export default function OrganizeTournamentPage() {
@@ -71,6 +75,9 @@ export default function OrganizeTournamentPage() {
         startAt: new Date(form.startAt).toISOString(),
         endAt: new Date(form.endAt).toISOString(),
         rules: form.rules || undefined,
+        spotLat: form.spotLat ? Number(form.spotLat) : undefined,
+        spotLng: form.spotLng ? Number(form.spotLng) : undefined,
+        spotRadiusKm: form.spotRadiusKm ? Number(form.spotRadiusKm) : undefined,
         status: 'upcoming',
       };
       return (await api.post('/tournaments/organized', body)).data.data;
@@ -174,6 +181,9 @@ export default function OrganizeTournamentPage() {
             </select>
           </label>
           <label className="admin-muted">지역<input className="admin-input" value={form.region} onChange={set('region')} placeholder="예: 경남 거제" /></label>
+          <label className="admin-muted">포인트 위도<input className="admin-input" value={form.spotLat} onChange={set('spotLat')} inputMode="decimal" placeholder="예: 34.88000" /></label>
+          <label className="admin-muted">포인트 경도<input className="admin-input" value={form.spotLng} onChange={set('spotLng')} inputMode="decimal" placeholder="예: 128.62100" /></label>
+          <label className="admin-muted">현장 반경 km (비우면 5)<input className="admin-input" value={form.spotRadiusKm} onChange={set('spotRadiusKm')} inputMode="decimal" placeholder="0.5~30" /></label>
           <label className="admin-muted">어종 ID (선택)<input className="admin-input" value={form.fishSpeciesId} onChange={set('fishSpeciesId')} inputMode="numeric" /></label>
           <label className="admin-muted">최소 체장 cm<input className="admin-input" value={form.minLengthCm} onChange={set('minLengthCm')} inputMode="decimal" /></label>
           <label className="admin-muted">최대 체장 cm<input className="admin-input" value={form.maxLengthCm} onChange={set('maxLengthCm')} inputMode="decimal" /></label>
@@ -259,6 +269,7 @@ export default function OrganizeTournamentPage() {
                           dayCodeStatus?: string | null;
                           integrityNote?: string | null;
                           photoTakenAt?: string | null;
+                          spotDistanceKm?: number | null;
                           user: { nickname: string };
                         }) => {
                           const image = getImageUrl(claim.imageUrl);
@@ -274,6 +285,7 @@ export default function OrganizeTournamentPage() {
                               {claim.lengthCm ? ` · ${Number(claim.lengthCm).toFixed(1)}cm` : ''}
                               {' · 인증 '}{claim.status}
                               {taken ? ` · 촬영 ${taken}` : ''}
+                              {claim.spotDistanceKm != null ? ` · 포인트 ${claim.spotDistanceKm}km` : ''}
                               {flags ? ` · ${flags}` : ''}
                               {image && (
                                 <>

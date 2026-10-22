@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ServiceUnavailableException } from '@nestjs/common';
 import { CatchesService } from './catches.service';
-import { removeUploadedFile } from '../common/upload/image-integrity.util';
+import { removeUploadedFile, validatePhotoFreshness } from '../common/upload/image-integrity.util';
 import { computePerceptualHash } from '../common/upload/image-phash.util';
 
 jest.mock('../common/upload/image-integrity.util', () => {
@@ -186,6 +186,28 @@ describe('CatchesService 이미지 해시', () => {
         }),
       }),
     );
+  });
+
+  it('포인트에서 먼 GPS는 대회 코드 업로드를 거절한다', async () => {
+    (validatePhotoFreshness as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      exifLat: 35.1796,
+      exifLng: 129.0756,
+      takenAt: new Date('2026-10-20T03:00:00.000Z'),
+    });
+    prisma.catch.findFirst.mockResolvedValue(null);
+    tournaments.resolveDayCodeClaim.mockResolvedValueOnce({
+      claimedTournamentId: 'tour-1',
+      claimedDayCode: 'LAKE1',
+      dayCodeStatus: 'pending',
+      spot: { lat: 37.5665, lng: 126.978, radiusKm: 5 },
+    });
+
+    await expect(
+      service.createCertified('user-1', file, { tournamentId: 'tour-1', dayCode: 'LAKE1' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(removeUploadedFile).toHaveBeenCalledWith(file.path);
+    expect(prisma.catch.create).not.toHaveBeenCalled();
   });
 
   it('자랑 기록을 지우면 이미지 해시를 비운다', async () => {

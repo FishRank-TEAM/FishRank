@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import { IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 
 export class OrganizerTournamentDto {
   @IsString()
@@ -73,4 +73,25 @@ export class OrganizerTournamentDto {
   @IsOptional()
   @IsIn(['upcoming', 'active', 'closed', 'finished'])
   status?: 'upcoming' | 'active' | 'closed' | 'finished';
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  spotLat?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  spotLng?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.5)
+  @Max(30)
+  spotRadiusKm?: number;
 }
