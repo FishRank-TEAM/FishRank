@@ -13,7 +13,12 @@ describe('TournamentsService 일일 코드', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.tournament.findUnique.mockResolvedValue({ id: 'tour-1' });
+    prisma.tournament.findUnique.mockResolvedValue({
+      id: 'tour-1',
+      status: 'active',
+      startAt: new Date('2026-10-01T00:00:00.000Z'),
+      endAt: new Date('2026-11-01T00:00:00.000Z'),
+    });
   });
 
   it('관리자가 서울 날짜 코드를 저장한다', async () => {
@@ -42,7 +47,7 @@ describe('TournamentsService 일일 코드', () => {
     prisma.tournamentDayCode.findUnique.mockResolvedValue({ code: 'LAKE1' });
 
     await expect(
-      service.resolveDayCodeClaim('user-1', { tournamentId: 'tour-1', dayCode: 'lake1' }, now),
+      service.resolveDayCodeClaim('user-1', { tournamentId: 'tour-1', dayCode: 'lake1' }, now, now),
     ).resolves.toEqual({
       claimedTournamentId: 'tour-1',
       claimedDayCode: 'LAKE1',
@@ -122,6 +127,40 @@ describe('TournamentsService 일일 코드', () => {
 
     await expect(
       service.resolveDayCodeClaim('user-1', { tournamentId: 'tour-1', dayCode: 'RIVER' }, now),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('실격 참가자와 진행 중이 아닌 대회는 코드를 받지 않는다', async () => {
+    prisma.tournamentEntry.findUnique.mockResolvedValue({ paymentStatus: 'free', disqualified: true });
+    prisma.tournamentDayCode.findUnique.mockResolvedValue({ code: 'LAKE1' });
+    await expect(
+      service.resolveDayCodeClaim('user-1', { tournamentId: 'tour-1', dayCode: 'LAKE1' }, now, now),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    prisma.tournament.findUnique.mockResolvedValue({
+      id: 'tour-1',
+      status: 'upcoming',
+      startAt: new Date('2026-10-01T00:00:00.000Z'),
+      endAt: new Date('2026-11-01T00:00:00.000Z'),
+    });
+    prisma.tournamentEntry.findUnique.mockResolvedValue({ paymentStatus: 'free', disqualified: false });
+    await expect(
+      service.resolveDayCodeClaim('user-1', { tournamentId: 'tour-1', dayCode: 'LAKE1' }, now, now),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.tournamentDayCode.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('다른 날 사진은 오늘 코드로 받지 않는다', async () => {
+    prisma.tournamentEntry.findUnique.mockResolvedValue({ paymentStatus: 'free', disqualified: false });
+    prisma.tournamentDayCode.findUnique.mockResolvedValue({ code: 'LAKE1' });
+
+    await expect(
+      service.resolveDayCodeClaim(
+        'user-1',
+        { tournamentId: 'tour-1', dayCode: 'LAKE1' },
+        now,
+        new Date('2026-10-19T03:00:00.000Z'),
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

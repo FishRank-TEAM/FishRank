@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { normalizeDayCode, seoulDateKey } from './day-code.util';
+import { assertDayCodePhoto, normalizeDayCode, seoulDateKey } from './day-code.util';
 import { buildLiveLeaderboard, leaderboardCsv } from './live-leaderboard.util';
 
 export type DayCodeClaim = {
@@ -247,7 +247,12 @@ export class TournamentsService {
     });
   }
 
-  async resolveDayCodeClaim(userId: string, body: { tournamentId?: unknown; dayCode?: unknown }, now = new Date()): Promise<DayCodeClaim> {
+  async resolveDayCodeClaim(
+    userId: string,
+    body: { tournamentId?: unknown; dayCode?: unknown },
+    now = new Date(),
+    takenAt?: Date,
+  ): Promise<DayCodeClaim> {
     const tournamentId = typeof body.tournamentId === 'string' ? body.tournamentId.trim() : '';
     const rawCode = typeof body.dayCode === 'string' ? body.dayCode : '';
     if (!tournamentId && !rawCode.trim()) return EMPTY_DAY_CODE_CLAIM;
@@ -258,11 +263,20 @@ export class TournamentsService {
     const code = normalizeDayCode(rawCode);
     if (!code) throw new BadRequestException('대회 코드는 4~12자의 영문 또는 숫자여야 합니다.');
 
+    const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw new NotFoundException('대회를 찾을 수 없습니다.');
+    if (tournament.status !== 'active' || now < tournament.startAt || now > tournament.endAt) {
+      throw new BadRequestException('진행 중인 대회 기간에만 코드를 제출할 수 있습니다.');
+    }
+
     const entry = await this.prisma.tournamentEntry.findUnique({
       where: { tournamentId_userId: { tournamentId, userId } },
     });
     if (!entry || (entry.paymentStatus !== 'free' && entry.paymentStatus !== 'paid')) {
       throw new BadRequestException('참가 중인 대회만 코드를 제출할 수 있습니다.');
+    }
+    if (entry.disqualified) {
+      throw new BadRequestException('실격된 대회에는 코드를 제출할 수 없습니다.');
     }
 
     const codeDate = seoulDateKey(now);
@@ -271,6 +285,16 @@ export class TournamentsService {
     });
     if (!stored) throw new BadRequestException('오늘 대회 코드가 아직 없습니다.');
     if (stored.code !== code) throw new BadRequestException('대회 코드가 맞지 않습니다.');
+
+    if (takenAt) {
+      const photo = assertDayCodePhoto({
+        takenAt,
+        codeDate,
+        startAt: tournament.startAt,
+        endAt: tournament.endAt,
+      });
+      if (!photo.ok) throw new BadRequestException(photo.reason);
+    }
 
     return { claimedTournamentId: tournamentId, claimedDayCode: code, dayCodeStatus: 'pending' };
   }
@@ -312,6 +336,7 @@ export class TournamentsService {
         claimedDayCode: true,
         dayCodeStatus: true,
         integrityNote: true,
+        photoTakenAt: true,
         createdAt: true,
         user: { select: { id: true, nickname: true } },
       },
@@ -336,6 +361,9 @@ export class TournamentsService {
       },
     });
     if (!catch_) throw new NotFoundException('이 대회에 제출된 코드를 찾을 수 없습니다.');
+    if (status === 'accepted' && catch_.status === 'rejected') {
+      throw new BadRequestException('반려된 인증은 대회에 넣을 수 없습니다.');
+    }
     return this.prisma.catch.update({
       where: { id: catchId },
       data: { dayCodeStatus: status },

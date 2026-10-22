@@ -35,6 +35,12 @@ export type PhotoFreshnessResult =
 
 export type ClaimedLocation = { lat?: number; lng?: number };
 
+export function appendIntegrityNote(note: string | undefined, flag: string): string {
+  const parts = new Set((note ?? '').split(',').map((part) => part.trim()).filter(Boolean));
+  parts.add(flag);
+  return [...parts].join(',');
+}
+
 export function isPlausibleGps(lat: number, lng: number): boolean {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
