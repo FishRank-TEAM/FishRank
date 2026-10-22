@@ -171,6 +171,10 @@ S3_BUCKET_NAME=fishrank-images
 # 내부 통신 인증
 INTERNAL_SECRET=내부_통신용_시크릿
 
+# 개발은 비우거나 false. 운영/Docker 프로덕션은 true (예: ai/production.env.example).
+# NODE_ENV=production 이면 AI_WARMUP 을 비워도 기동 시 YOLO 를 올립니다.
+AI_WARMUP=true
+
 # 모델 경로
 YOLO_MODEL_PATH=models/fish_classifier.pt
 YOLO_CONFIDENCE=0.5
@@ -227,9 +231,9 @@ pm2 start apps/api/dist/main.js --name fishrank-api
 npm run build --prefix apps/web
 pm2 start "npm run start --prefix apps/web" --name fishrank-web
 
-# FastAPI 배포
+# FastAPI 배포. AI_WARMUP=true 는 기동 시 YOLO 예열(기존 운영 동작)을 유지합니다.
 cd ai
-uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
+NODE_ENV=production AI_WARMUP=true uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
 ```
 
 ---

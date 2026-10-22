@@ -1,3 +1,6 @@
+import logging
+
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
 
 from app.analyzer import analyze_image, resolve_image_path
@@ -5,6 +8,7 @@ from app.auth import verify_internal_secret
 from app.config import settings
 from app.production_guard import assert_production_secret, runtime_env
 from app.keypoints import detect_keypoints
+from app.runtime_tuning import prepare_process_threads, warmup_enabled
 from app.schemas import (
     AnalyzeRequest,
     AnalyzeResponse,
@@ -16,20 +20,30 @@ from app.schemas import (
 from app.species_yolo import INFERENCE_VERSION, get_yolo_class_count, is_yolo_available, warmup_yolo
 import cv2
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="FishRank AI Server", version="1.0.0")
 
 
 @app.on_event("startup")
 def _startup_warmup() -> None:
+    load_dotenv()
     assert_production_secret(runtime_env(), settings.internal_secret)
-    if is_yolo_available():
+    prepare_process_threads()
+    if not is_yolo_available():
+        return
+    if warmup_enabled():
+        logger.info("YOLO warmup enabled")
         warmup_yolo()
+        return
+    logger.info("YOLO warmup skipped; weights load on the first inference request")
 
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     yolo_ready = is_yolo_available()
     model_name = "yolo+opencv" if yolo_ready else "opencv+clip"
+    # Do not load weights here. Class count stays empty until warmup or /analyze.
     yolo_class_count = get_yolo_class_count() if yolo_ready else None
     return HealthResponse(
         status="ok",
