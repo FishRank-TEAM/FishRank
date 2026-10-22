@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { toPublicCatches } from '../catches/public-catch';
 
 @Injectable()
 export class UsersService {
@@ -52,9 +53,11 @@ export class UsersService {
       },
     });
 
-    return featuredCatchIds
-      .map((id) => catches.find((c) => c.id === id))
-      .filter((c): c is NonNullable<typeof c> => !!c);
+    return toPublicCatches(
+      featuredCatchIds
+        .map((id) => catches.find((c) => c.id === id))
+        .filter((c): c is NonNullable<typeof c> => !!c),
+    );
   }
 
   async getPublicProfile(nickname: string) {
@@ -100,7 +103,15 @@ export class UsersService {
       this.getUserGears(user.id),
     ]);
 
-    return { user, stats, featuredCatches, catches, personalCatches, posts, gears };
+    return {
+      user,
+      stats,
+      featuredCatches,
+      catches: toPublicCatches(catches),
+      personalCatches: toPublicCatches(personalCatches),
+      posts,
+      gears,
+    };
   }
 
   async getMyStats(userId: string) {

@@ -132,6 +132,31 @@ describe('CatchesService 이미지 해시', () => {
     expect(prisma.catch.create).not.toHaveBeenCalled();
   });
 
+  it('공개 단건 조회는 대회 코드와 해시를 빼 준다', async () => {
+    prisma.catch.findUnique.mockResolvedValue({
+      id: 'catch-1',
+      claimedDayCode: 'LAKE1',
+      imageHash: 'abc',
+      perceptualHash: 'ffff',
+      exifLat: 35.1,
+      exifLng: 129.1,
+      dayCodeStatus: 'accepted',
+      lengthCm: 42,
+      user: { id: 'user-1', nickname: 'angler', profileImage: null },
+      fishSpecies: null,
+      certification: { grade: 'S' },
+    });
+
+    const result = await service.findById('catch-1');
+
+    expect(result).toEqual(expect.objectContaining({ id: 'catch-1', dayCodeStatus: 'accepted', lengthCm: 42 }));
+    expect(result).not.toHaveProperty('claimedDayCode');
+    expect(result).not.toHaveProperty('imageHash');
+    expect(result).not.toHaveProperty('perceptualHash');
+    expect(result).not.toHaveProperty('exifLat');
+    expect(JSON.stringify(result)).not.toContain('LAKE1');
+  });
+
   it('자랑 기록을 지우면 이미지 해시를 비운다', async () => {
     prisma.catch.findUnique.mockResolvedValue({
       id: 'catch-1',
