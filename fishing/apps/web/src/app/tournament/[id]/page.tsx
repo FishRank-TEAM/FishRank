@@ -99,6 +99,7 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
             </div>
           )}
           <div className="tournament-detail-meta">
+            {data.organizer?.nickname ? `주최 ${data.organizer.nickname} · ` : ''}
             {new Date(data.startAt).toLocaleDateString('ko-KR')} ~{' '}
             {new Date(data.endAt).toLocaleDateString('ko-KR')} · 참가 {data._count?.entries ?? 0}명
           </div>
@@ -116,6 +117,19 @@ export default function TournamentDetailPage({ params }: { params: Promise<{ id:
             <div className="detail-card" style={{ marginBottom: 16 }}>
               <h3 className="detail-card-title">📋 대회 규정</h3>
               <pre className="content-prose-sm">{data.rules}</pre>
+            </div>
+          )}
+
+          {data.spotLat != null && data.spotLng != null && (
+            <div className="detail-card" style={{ marginBottom: 16 }}>
+              <h3 className="detail-card-title">현장 포인트</h3>
+              <p className="content-prose-sm">
+                위도 {Number(data.spotLat).toFixed(5)}, 경도 {Number(data.spotLng).toFixed(5)}
+                {' · '}반경 {Number(data.spotRadiusKm ?? 5)}km
+              </p>
+              <p className="admin-muted">
+                이 반경 안에서 찍은 사진만 오늘 코드로 받을 수 있습니다. GPS가 없는 사진은 운영자가 확인합니다.
+              </p>
             </div>
           )}
 

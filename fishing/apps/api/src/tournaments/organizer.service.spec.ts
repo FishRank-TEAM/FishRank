@@ -41,7 +41,33 @@ describe('TournamentsService 운영자 대회', () => {
       region: '경남 거제',
       minLengthCm: 25,
       prize: '상품권',
+      spotLat: null,
+      spotLng: null,
+      spotRadiusKm: null,
     }));
+  });
+
+  it('포인트 좌표는 기본 반경 5km로 저장하고, 위도만 있으면 거절한다', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'org-1', role: 'organizer' });
+    prisma.tournament.create.mockImplementation(async ({ data }) => data);
+
+    const created = await service.createForOrganizer('org-1', {
+      ...dto,
+      spotLat: 34.88,
+      spotLng: 128.62,
+    });
+    expect(created).toEqual(expect.objectContaining({
+      spotLat: 34.88,
+      spotLng: 128.62,
+      spotRadiusKm: 5,
+    }));
+
+    await expect(
+      service.createForOrganizer('org-1', { ...dto, spotLat: 34.88 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.createForOrganizer('org-1', { ...dto, spotLat: 0, spotLng: 0 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('참가비가 있으면 거절한다', async () => {
@@ -135,5 +161,36 @@ describe('TournamentsService 운영자 대회', () => {
       BadRequestException,
     );
     expect(prisma.catch.update).not.toHaveBeenCalled();
+  });
+
+  it('코드 제출 목록은 포인트까지 거리만 보여 주고 원본 GPS는 빼 준다', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'org-1', role: 'organizer' });
+    prisma.tournament.findUnique.mockResolvedValue({
+      id: 'tour-1',
+      organizerId: 'org-1',
+      spotLat: 37.5665,
+      spotLng: 126.978,
+      spotRadiusKm: 5,
+    });
+    prisma.catch.findMany.mockResolvedValue([{
+      id: 'catch-1',
+      lengthCm: 30,
+      status: 'approved',
+      imageUrl: '/uploads/a.jpg',
+      claimedDayCode: 'SHOP1',
+      dayCodeStatus: 'pending',
+      integrityNote: null,
+      photoTakenAt: null,
+      exifLat: 37.57,
+      exifLng: 126.98,
+      createdAt: new Date('2026-10-20T03:00:00.000Z'),
+      user: { id: 'user-1', nickname: 'angler' },
+    }]);
+
+    const rows = await service.listDayCodeClaims('org-1', 'tour-1');
+
+    expect(rows[0].spotDistanceKm).toBeLessThan(5);
+    expect(rows[0]).not.toHaveProperty('exifLat');
+    expect(JSON.stringify(rows)).not.toContain('37.57');
   });
 });

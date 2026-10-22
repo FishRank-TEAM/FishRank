@@ -7,6 +7,7 @@ import { determineGrade } from '../common/certification/certification-grade.util
 import { computeRankScore } from '../common/certification/rank-score.util';
 import {
   appendIntegrityNote,
+  assertWithinSpot,
   computeImageHash,
   removeUploadedFile,
   validatePhotoFreshness,
@@ -63,9 +64,21 @@ export class CatchesService {
       throw error;
     }
 
-    const notedFreshness = claim.claimedTournamentId && !freshness.takenAt
-      ? { ...freshness, integrityNote: appendIntegrityNote(freshness.integrityNote, 'code_date_unverified') }
-      : freshness;
+    let integrityNote = freshness.integrityNote;
+    if (claim.claimedTournamentId && !freshness.takenAt) {
+      integrityNote = appendIntegrityNote(integrityNote, 'code_date_unverified');
+    }
+    if (claim.spot) {
+      const proximity = assertWithinSpot(freshness.exifLat, freshness.exifLng, claim.spot);
+      if (!proximity.ok) {
+        await removeUploadedFile(file.path);
+        throw new BadRequestException(proximity.reason);
+      }
+      if (proximity.unverified) {
+        integrityNote = appendIntegrityNote(integrityNote, 'spot_unverified');
+      }
+    }
+    const notedFreshness = { ...freshness, integrityNote };
 
     const imageUrl = `/uploads/${file.filename}`;
 

@@ -52,6 +52,7 @@ describe('TournamentsService 일일 코드', () => {
       claimedTournamentId: 'tour-1',
       claimedDayCode: 'LAKE1',
       dayCodeStatus: 'pending',
+      spot: null,
     });
   });
 
@@ -60,6 +61,7 @@ describe('TournamentsService 일일 코드', () => {
       claimedTournamentId: null,
       claimedDayCode: null,
       dayCodeStatus: null,
+      spot: null,
     });
     expect(prisma.tournamentEntry.findUnique).not.toHaveBeenCalled();
   });
