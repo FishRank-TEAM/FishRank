@@ -11,6 +11,10 @@ sys.path.insert(0, str(AI_DIR))
 
 load_dotenv(AI_DIR / ".env")
 
+from app.runtime_tuning import prepare_process_threads  # noqa: E402
+
+prepare_process_threads()
+
 from app.config import settings  # noqa: E402
 
 if __name__ == "__main__":

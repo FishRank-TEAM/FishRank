@@ -36,10 +36,10 @@ def is_yolo_available() -> bool:
 
 
 def get_yolo_class_count() -> int | None:
-    model = _load_model()
-    if model is None:
+    """Class count for an already-loaded model. Never loads weights."""
+    if _model is None:
         return None
-    return len(model.names)
+    return len(_model.names)
 
 
 def warmup_yolo() -> bool:
@@ -108,6 +108,9 @@ def _load_model():
     if not path.is_file():
         return None
 
+    from .runtime_tuning import apply_torch_thread_cap
+
+    apply_torch_thread_cap()
     from ultralytics import YOLO
 
     logger.info("Loading YOLO classifier: %s", path)

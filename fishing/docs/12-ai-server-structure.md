@@ -242,6 +242,8 @@ npm run dev:all
 npm run dev
 ```
 
+로컬 `npm run ai` 는 `AI_WARMUP` 이 없으면 YOLO 가중치를 기동 때 올리지 않습니다. 첫 `/analyze` 에서 읽고, 개발 중 PyTorch 스레드는 기본 1개입니다 (`TORCH_NUM_THREADS`). `NODE_ENV=production` 이거나 `AI_WARMUP=true` 이면 예전처럼 기동 시 예열하고 스레드를 제한하지 않습니다. 운영 env 예시는 `ai/production.env.example` 입니다. `/health` 는 가중치를 로드하지 않으므로, 예열 전에는 `yoloClassCount` 가 비어 있을 수 있습니다.
+
 | 서비스 | 포트 | URL |
 |---|---|---|
 | Web | 3000 | http://localhost:3000 |

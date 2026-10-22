@@ -39,6 +39,9 @@ def _get_classifier():
     if _classifier is not None:
         return _classifier, _label_to_slug or {}
 
+    from .runtime_tuning import apply_torch_thread_cap
+
+    apply_torch_thread_cap()
     from transformers import pipeline
     import torch
 
