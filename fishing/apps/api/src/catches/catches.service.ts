@@ -6,6 +6,7 @@ import { resolveSpeciesId } from '../ai/species-slug.util';
 import { determineGrade } from '../common/certification/certification-grade.util';
 import { computeRankScore } from '../common/certification/rank-score.util';
 import {
+  appendIntegrityNote,
   computeImageHash,
   removeUploadedFile,
   validatePhotoFreshness,
@@ -56,11 +57,15 @@ export class CatchesService {
 
     let claim;
     try {
-      claim = await this.tournaments.resolveDayCodeClaim(userId, body);
+      claim = await this.tournaments.resolveDayCodeClaim(userId, body, new Date(), freshness.takenAt);
     } catch (error) {
       await removeUploadedFile(file.path);
       throw error;
     }
+
+    const notedFreshness = claim.claimedTournamentId && !freshness.takenAt
+      ? { ...freshness, integrityNote: appendIntegrityNote(freshness.integrityNote, 'code_date_unverified') }
+      : freshness;
 
     const imageUrl = `/uploads/${file.filename}`;
 
@@ -71,7 +76,7 @@ export class CatchesService {
       imageHash,
       perceptualHash,
       body,
-      freshness,
+      notedFreshness,
       claim,
     );
 

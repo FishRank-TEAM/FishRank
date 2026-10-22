@@ -17,6 +17,7 @@ const STATUS_OPTIONS = [
 const NOTE_LABELS: Record<string, string> = {
   date_missing: '촬영 시각 없음',
   gps_missing: 'GPS 없음',
+  code_date_unverified: '촬영일을 코드 날짜와 대조하지 못함',
 };
 
 function noteLabel(note?: string | null) {
@@ -257,10 +258,14 @@ export default function OrganizeTournamentPage() {
                           claimedDayCode?: string | null;
                           dayCodeStatus?: string | null;
                           integrityNote?: string | null;
+                          photoTakenAt?: string | null;
                           user: { nickname: string };
                         }) => {
                           const image = getImageUrl(claim.imageUrl);
                           const flags = noteLabel(claim.integrityNote);
+                          const taken = claim.photoTakenAt
+                            ? new Date(claim.photoTakenAt).toLocaleString('ko-KR')
+                            : '';
                           return (
                             <li key={claim.id}>
                               {claim.user.nickname}
@@ -268,6 +273,7 @@ export default function OrganizeTournamentPage() {
                               {' · '}{claim.dayCodeStatus}
                               {claim.lengthCm ? ` · ${Number(claim.lengthCm).toFixed(1)}cm` : ''}
                               {' · 인증 '}{claim.status}
+                              {taken ? ` · 촬영 ${taken}` : ''}
                               {flags ? ` · ${flags}` : ''}
                               {image && (
                                 <>

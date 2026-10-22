@@ -98,7 +98,7 @@ describe('TournamentsService 운영자 대회', () => {
   it('운영자는 자기 대회에 제출된 코드만 수락한다', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'org-1', role: 'organizer' });
     prisma.tournament.findUnique.mockResolvedValue({ id: 'tour-1', organizerId: 'org-1' });
-    prisma.catch.findFirst.mockResolvedValue({ id: 'catch-1', claimedDayCode: 'SHOP1' });
+    prisma.catch.findFirst.mockResolvedValue({ id: 'catch-1', claimedDayCode: 'SHOP1', status: 'approved' });
     prisma.catch.update.mockResolvedValue({ id: 'catch-1', dayCodeStatus: 'accepted' });
 
     await expect(service.reviewDayCodeClaim('org-1', 'tour-1', 'catch-1', 'accepted')).resolves.toEqual({
@@ -122,6 +122,17 @@ describe('TournamentsService 운영자 대회', () => {
 
     await expect(service.reviewDayCodeClaim('org-1', 'tour-1', 'catch-9', 'accepted')).rejects.toBeInstanceOf(
       NotFoundException,
+    );
+    expect(prisma.catch.update).not.toHaveBeenCalled();
+  });
+
+  it('반려된 인증은 코드 수락을 거절한다', async () => {
+    prisma.user.findUnique.mockResolvedValue({ id: 'org-1', role: 'organizer' });
+    prisma.tournament.findUnique.mockResolvedValue({ id: 'tour-1', organizerId: 'org-1' });
+    prisma.catch.findFirst.mockResolvedValue({ id: 'catch-1', claimedDayCode: 'SHOP1', status: 'rejected' });
+
+    await expect(service.reviewDayCodeClaim('org-1', 'tour-1', 'catch-1', 'accepted')).rejects.toBeInstanceOf(
+      BadRequestException,
     );
     expect(prisma.catch.update).not.toHaveBeenCalled();
   });

@@ -3,11 +3,15 @@ import { CatchesService } from './catches.service';
 import { removeUploadedFile } from '../common/upload/image-integrity.util';
 import { computePerceptualHash } from '../common/upload/image-phash.util';
 
-jest.mock('../common/upload/image-integrity.util', () => ({
-  computeImageHash: jest.fn().mockResolvedValue('hash-1'),
-  removeUploadedFile: jest.fn().mockResolvedValue(undefined),
-  validatePhotoFreshness: jest.fn().mockResolvedValue({ ok: true }),
-}));
+jest.mock('../common/upload/image-integrity.util', () => {
+  const actual = jest.requireActual('../common/upload/image-integrity.util');
+  return {
+    ...actual,
+    computeImageHash: jest.fn().mockResolvedValue('hash-1'),
+    removeUploadedFile: jest.fn().mockResolvedValue(undefined),
+    validatePhotoFreshness: jest.fn().mockResolvedValue({ ok: true }),
+  };
+});
 
 jest.mock('../common/upload/image-phash.util', () => {
   const actual = jest.requireActual('../common/upload/image-phash.util');
@@ -155,6 +159,33 @@ describe('CatchesService 이미지 해시', () => {
     expect(result).not.toHaveProperty('perceptualHash');
     expect(result).not.toHaveProperty('exifLat');
     expect(JSON.stringify(result)).not.toContain('LAKE1');
+  });
+
+  it('촬영 시각이 없는 대회 제출은 확인 불가로 남긴다', async () => {
+    prisma.catch.findFirst.mockResolvedValue(null);
+    prisma.catch.findMany.mockResolvedValue([]);
+    tournaments.resolveDayCodeClaim.mockResolvedValueOnce({
+      claimedTournamentId: 'tour-1',
+      claimedDayCode: 'LAKE1',
+      dayCodeStatus: 'pending',
+    });
+    prisma.catch.create.mockResolvedValue({ id: 'new-catch' });
+    prisma.certification.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.catch.delete.mockResolvedValue({});
+    aiService.analyze.mockRejectedValue(new ServiceUnavailableException('AI down'));
+
+    await expect(
+      service.createCertified('user-1', file, { tournamentId: 'tour-1', dayCode: 'LAKE1' }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+
+    expect(prisma.catch.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          claimedDayCode: 'LAKE1',
+          integrityNote: 'code_date_unverified',
+        }),
+      }),
+    );
   });
 
   it('자랑 기록을 지우면 이미지 해시를 비운다', async () => {
