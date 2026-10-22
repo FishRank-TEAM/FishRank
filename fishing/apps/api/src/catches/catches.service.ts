@@ -14,6 +14,7 @@ import { isUniqueConstraintError, softDeleteCatchData } from '../common/upload/c
 import { computePerceptualHash, isNearDuplicate } from '../common/upload/image-phash.util';
 import { parsePageLimit } from '../common/pagination.util';
 import { TournamentsService } from '../tournaments/tournaments.service';
+import { toPublicCatch, toPublicCatches } from './public-catch';
 
 function claimedLocation(body: { locationLat?: unknown; locationLng?: unknown }) {
   const lat = Number(body.locationLat);
@@ -148,7 +149,7 @@ export class CatchesService {
 
       message: '자랑 기록이 올라갔습니다. 다른 낚시인의 추천을 받아보세요!',
 
-      catch: catch_,
+      catch: toPublicCatch(catch_),
 
     };
 
@@ -361,7 +362,7 @@ export class CatchesService {
 
     if (!catch_) throw new NotFoundException('기록을 찾을 수 없습니다.');
 
-    return catch_;
+    return toPublicCatch(catch_);
 
   }
 
@@ -450,7 +451,13 @@ export class CatchesService {
 
 
 
-    return { items, total, page: paging.page, limit: paging.limit, recordType: recordType ?? 'all' };
+    return {
+      items: toPublicCatches(items),
+      total,
+      page: paging.page,
+      limit: paging.limit,
+      recordType: recordType ?? 'all',
+    };
   }
 
   async updatePersonal(
@@ -473,11 +480,12 @@ export class CatchesService {
     if (body.locationName !== undefined) data.locationName = body.locationName.trim() || null;
     if (body.fishSpeciesId !== undefined) data.fishSpeciesId = body.fishSpeciesId;
 
-    return this.prisma.catch.update({
+    const updated = await this.prisma.catch.update({
       where: { id: catchId },
       data,
       include: { fishSpecies: true },
     });
+    return toPublicCatch(updated);
   }
 
   async deletePersonal(userId: string, catchId: string) {
